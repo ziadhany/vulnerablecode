@@ -38,7 +38,6 @@ TEST_DATA = os.path.join(BASE_DIR, "test_data/")
 
 
 class DebianImportTest(TestCase):
-
     @classmethod
     def setUpClass(cls) -> None:
         fixture_path = os.path.join(TEST_DATA, "debian.json")
