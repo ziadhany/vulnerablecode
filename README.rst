@@ -100,8 +100,12 @@ TL;DR
 
 .. code-block:: bash
 
-    git clone https://github.com/nexB/vulnerablecode.git && cd vulnerablecode
-    make envfile
+    git clone https://github.com/nexB/vulnerablecode.git
+    cd vulnerablecode
+    make envfile 
+    make dev
+    source venv/bin/activate
+    pip install docker-compose
     docker-compose up
 
 Go to http://localhost:8000/ on a web browser to access the web UI.
