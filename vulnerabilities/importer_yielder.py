@@ -56,6 +56,8 @@ IMPORTER_REGISTRY = [
             "debian_tracker_url": "https://security-tracker.debian.org/tracker/data/json"
         },
     },
+    # the license is not open : https://github.com/pyupio/safety-db/blob/master/LICENSE.txt
+    #
     # {
     #     "name": "safetydb",
     #     "license": "cc-by-nc-4.0",
@@ -80,14 +82,37 @@ IMPORTER_REGISTRY = [
         "data_source": "RubyDataSource",
         "data_source_cfg": {"repository_url": "https://github.com/rubysec/ruby-advisory-db.git"},
     },
+    # The license of the Ubuntu Oval generator if GPL-3.0 but the license of the actual
+    # Ubuntu oval data is not clear
     {
         "name": "ubuntu",
-        "license": "gpl-2.0",
+        "license": "",
         "last_run": None,
         "data_source": "UbuntuDataSource",
         "data_source_cfg": {
             "etags": {},
-            "releases": ["bionic", "trusty", "focal", "eoan", "xenial"],
+            # TODO: add all data: https://people.canonical.com/~ubuntu-security/oval/HEADER.html
+            # Conventions
+            # The files are named using the convention:
+            # com.ubuntu.releaseName.usn.oval.xml.bz2 And for OCI images they
+            # use the same format with "oci." prepended.
+            # oci.com.ubuntu.releaseName.usn.oval.xml.bz2
+
+            # Additional, OVAL data containing information about all the CVEs
+            # the Ubuntu Security Team tracks are provided, including currently
+            # unfixed issues. The convention for these files is:
+            # com.ubuntu.releaseName.cve.oval.xml.bz2
+
+            # And for OCI images they use the same format with "oci." prepended.
+            # oci.com.ubuntu.releaseName.cve.oval.xml.bz2
+
+            # note thes relesae are sorted from most recent to oldest
+            "releases": [
+                "focal", "bionic", "xenial", "trusty", ]
+                # some non LTS
+                 +["impish", "hirsute", "eoan", "disco", "cosmic"]
+                 # some EOL
+                 +["precise",]
         },
     },
     {
@@ -97,6 +122,11 @@ IMPORTER_REGISTRY = [
         "data_source": "RetireDotnetDataSource",
         "data_source_cfg": {"repository_url": "https://github.com/RetireNet/Packages.git"},
     },
+    # the license of the Suse CVRF data is not clear: https://ftp.suse.com/pub/projects/security/cvrf-cve
+    # The SUSE CVRF data is provided by SUSE under the Creative Commons license,
+    # with Attribution for Non Commercial use:
+    # CC-BY-4.0
+    # https://creativecommons.org/licenses/by/4.0/
     # {
     #     "name": "suse_backports",
     #     "license": "",
@@ -116,7 +146,10 @@ IMPORTER_REGISTRY = [
         "license": "",
         "last_run": None,
         "data_source": "DebianOvalDataSource",
-        "data_source_cfg": {"etags": {}, "releases": ["wheezy", "stretch", "jessie", "buster"]},
+        "data_source_cfg": {
+            "etags": {},
+            "releases": ["wheezy", "stretch", "jessie", "buster"],
+        },
     },
     {
         "name": "redhat",
@@ -241,7 +274,9 @@ def load_importers():
 
     for importer in IMPORTER_REGISTRY:
         imp, created = Importer.objects.get_or_create(
-            name=importer["name"], data_source=importer["data_source"], license=importer["license"]
+            name=importer["name"],
+            data_source=importer["data_source"],
+            license=importer["license"],
         )
 
         if created:
