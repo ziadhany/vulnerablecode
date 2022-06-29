@@ -17,6 +17,7 @@ from vulnerabilities.importers import elixir_security
 from vulnerabilities.importers import gentoo
 from vulnerabilities.importers import github
 from vulnerabilities.importers import gitlab
+from vulnerabilities.importers import gsd
 from vulnerabilities.importers import istio
 from vulnerabilities.importers import mozilla
 from vulnerabilities.importers import nginx
@@ -59,6 +60,7 @@ IMPORTERS_REGISTRY = [
     elixir_security.ElixirSecurityImporter,
     apache_tomcat.ApacheTomcatImporter,
     xen.XenImporter,
+    gsd.GSDImporter,
 ]
 
 IMPORTERS_REGISTRY = {x.qualified_name: x for x in IMPORTERS_REGISTRY}
