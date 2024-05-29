@@ -1309,16 +1309,6 @@ class PackageChangeLog(ChangeLog):
         )
 
 
-class KnownRansomwareCampaignUseType(models.IntegerChoices):
-    """
-    Known if this vulnerability is known to have been leveraged as part of a ransomware campaign;
-    or 'Unknown' if CISA lacks confirmation that the vulnerability has been utilized for ransomware.
-    """
-
-    KNOWN = 1, "Known"
-    UNKNOWN = 2, "Unknown"
-
-
 class Kev(models.Model):
     """
     Known Exploited Vulnerabilities
@@ -1358,14 +1348,12 @@ class Kev(models.Model):
         " often a URL to vendor instructions."
     )
 
-    known_ransomware_campaign_use = models.IntegerField(
-        choices=KnownRansomwareCampaignUseType.choices
+    known_ransomware_campaign_use = models.BooleanField(
+        default=False,
+        help_text="""Known if this vulnerability is known to have been leveraged as part of a ransomware campaign; 
+        or 'Unknown' if CISA lacks confirmation that the vulnerability has been utilized for ransomware.""",
     )
 
     @property
     def get_known_ransomware_campaign_use_type(self):
-        label_by_status = {
-            choice_code: choice_label
-            for choice_code, choice_label in KnownRansomwareCampaignUseType.choices
-        }
-        return label_by_status.get(self.known_ransomware_campaign_use)
+        return "Known" if self.known_ransomware_campaign_use else "Unknown"
