@@ -25,6 +25,7 @@ from vulnerabilities.pipelines.v2_improvers import (
     computer_package_version_rank as compute_version_rank_v2,
 )
 from vulnerabilities.pipelines.v2_improvers import enhance_with_exploitdb as exploitdb_v2
+from vulnerabilities.pipelines.v2_improvers import enhance_with_github_poc
 from vulnerabilities.pipelines.v2_improvers import enhance_with_kev as enhance_with_kev_v2
 from vulnerabilities.pipelines.v2_improvers import (
     enhance_with_metasploit as enhance_with_metasploit_v2,
@@ -70,5 +71,6 @@ IMPROVERS_REGISTRY = create_registry(
         compute_advisory_todo_v2.ComputeToDo,
         unfurl_version_range_v2.UnfurlVersionRangePipeline,
         compute_advisory_todo.ComputeToDo,
+        enhance_with_github_poc.GithubPocsImproverPipeline,
     ]
 )
