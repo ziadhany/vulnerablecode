@@ -16,7 +16,7 @@ from vulnerabilities.pipelines import enhance_with_kev
 from vulnerabilities.pipelines import enhance_with_metasploit
 from vulnerabilities.pipelines import flag_ghost_packages
 from vulnerabilities.pipelines import populate_vulnerability_summary_pipeline
-from vulnerabilities.pipelines.v2_improvers import archive_urls
+from vulnerabilities.pipelines.v2_improvers import archive_urls, detection_rules
 from vulnerabilities.pipelines.v2_improvers import collect_ssvc_trees
 from vulnerabilities.pipelines.v2_improvers import compute_advisory_todo as compute_advisory_todo_v2
 from vulnerabilities.pipelines.v2_improvers import compute_package_risk as compute_package_risk_v2
@@ -75,5 +75,6 @@ IMPROVERS_REGISTRY = create_registry(
         compute_package_version_rank.ComputeVersionRankPipeline,
         populate_vulnerability_summary_pipeline.PopulateVulnerabilitySummariesPipeline,
         group_advisories_for_packages_v2.GroupAdvisoriesForPackages,
+        detection_rules.DetectionRulesPipeline,
     ]
 )
