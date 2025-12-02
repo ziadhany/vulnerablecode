@@ -683,7 +683,7 @@ def create_registry(pipelines):
     return registry
 
 
-def compute_patch_checksum(patch_text: str | None) -> str | None:
+def compute_patch_checksum(patch_text: str):
     """
     Compute SHA-512 checksum for patch text.
     """
