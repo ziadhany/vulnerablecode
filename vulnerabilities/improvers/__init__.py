@@ -19,6 +19,7 @@ from vulnerabilities.pipelines import enhance_with_metasploit
 from vulnerabilities.pipelines import flag_ghost_packages
 from vulnerabilities.pipelines import populate_vulnerability_summary_pipeline
 from vulnerabilities.pipelines import remove_duplicate_advisories
+from vulnerabilities.pipelines.v2_improvers import archive_urls
 from vulnerabilities.pipelines.v2_improvers import collect_ssvc_trees
 from vulnerabilities.pipelines.v2_improvers import compute_advisory_content_hash
 from vulnerabilities.pipelines.v2_improvers import compute_advisory_todo as compute_advisory_todo_v2
@@ -76,5 +77,6 @@ IMPROVERS_REGISTRY = create_registry(
         collect_ssvc_trees.CollectSSVCPipeline,
         relate_severities.RelateSeveritiesPipeline,
         compute_advisory_content_hash.ComputeAdvisoryContentHash,
+        archive_urls.ArchiveImproverPipeline,
     ]
 )
