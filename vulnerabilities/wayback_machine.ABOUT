@@ -1,0 +1,10 @@
+about_resource: wayback_machine.py
+version: 5407681c34ac299ad5c0622ea0c2d186a330fec1
+download_url: https://raw.githubusercontent.com/akamhy/waybackpy/5407681c34ac299ad5c0622ea0c2d186a330fec1/waybackpy/save_api.py
+package_url: pkg:github/akamhy/waybackpy@5407681c34ac299ad5c0622ea0c2d186a330fec1#waybackpy/save_api.py
+homepage_url: https://github.com/akamhy/waybackpy
+notes: There are two files extracted from waybackpy that handle API calls—`save_api.py` and `exceptions.py` and they are saved in `wayback_machine.py`
+
+copyright: Copyright (c) 2010 United States Government. All Rights Reserved.
+license_expression: MIT License
+license_file: wayback_machine.py.LICENSE
