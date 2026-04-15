@@ -25,7 +25,7 @@ class DetectionRulesPipeline(VulnerableCodePipeline):
     """
 
     pipeline_id = "detection_rules"
-    license_url = "https://github.com/ziadhany/detection-rules-collector/blob/master/LICENSE"
+    license_url = "https://github.com/aboutcode-data/detection-rules-collector/blob/master/LICENSE"
     precedence = 200
 
     @classmethod
@@ -81,11 +81,13 @@ class DetectionRulesPipeline(VulnerableCodePipeline):
                             self.log(f"No advisory found for aliases {vulnerability_id}")
 
                     raw_text = rule.get("rule_text")
+                    rule_metadata = rule.get("rule_metadata")
                     detection_rule, _ = DetectionRule.objects.get_or_create(
                         rule_text=raw_text,
-                        rule_type=rule_type,
                         defaults={
                             "source_url": source_url,
+                            "rule_type": rule_type,
+                            "rule_metadata": rule_metadata,
                         },
                     )
                     if advisories:
