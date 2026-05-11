@@ -35,6 +35,8 @@ class LinuxKernelPipeline(VulnerableCodeBaseImporterPipelineV2):
     license_url = "https://github.com/nluedtke/linux_kernel_cves/blob/master/LICENSE"
     run_once = True
 
+    exclude_from_package_todo = True
+
     @classmethod
     def steps(cls):
         return (
