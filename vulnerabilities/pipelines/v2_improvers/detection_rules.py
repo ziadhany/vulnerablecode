@@ -1,12 +1,3 @@
-#
-# Copyright (c) nexB Inc. and others. All rights reserved.
-# VulnerableCode is a trademark of nexB Inc.
-# SPDX-License-Identifier: Apache-2.0
-# See http://www.apache.org/licenses/LICENSE-2.0 for the license text.
-# See https://github.com/aboutcode-org/vulnerablecode for support or download.
-# See https://aboutcode.org for more information about nexB OSS projects.
-#
-
 import json
 from pathlib import Path
 
@@ -42,8 +33,7 @@ class DetectionRulesPipeline(VulnerableCodePipeline):
         self.vcs_response = fetch_via_vcs(self.repo_url)
 
     def advisories_count(self):
-        root = Path(self.vcs_response.dest_dir)
-        return sum(1 for _ in root.rglob("*.json"))
+        return 0
 
     def collect_detection_rules(self):
         base_path = Path(self.vcs_response.dest_dir) / "data"
@@ -65,20 +55,8 @@ class DetectionRulesPipeline(VulnerableCodePipeline):
 
                 source_url = json_data.get("source_url")
                 for rule in json_data.get("rules", []):
-                    advisories = set()
-                    for vulnerability_id in rule.get("vulnerabilities", []):
-                        try:
-                            if alias := AdvisoryAlias.objects.get(alias=vulnerability_id):
-                                for adv in alias.advisories.all():
-                                    advisories.add(adv)
-                            else:
-                                advs = AdvisoryV2.objects.filter(
-                                    advisory_id=vulnerability_id
-                                ).latest_per_avid()
-                                for adv in advs:
-                                    advisories.add(adv)
-                        except AdvisoryAlias.DoesNotExist:
-                            self.log(f"No advisory found for aliases {vulnerability_id}")
+                    vulns_id = rule.get("vulnerabilities", [])
+                    advisories = get_related_advisories(vulns_id)
 
                     raw_text = rule.get("rule_text")
                     rule_metadata = rule.get("rule_metadata")
@@ -102,3 +80,26 @@ class DetectionRulesPipeline(VulnerableCodePipeline):
     def on_failure(self):
         """Ensure cleanup is always performed on failure."""
         self.clean_downloads()
+
+
+def get_related_advisories(vulnerability_ids, logger=print):
+    """
+    Fetches related advisories for a list of vulnerability IDs.
+    """
+    advisories = set()
+
+    for vulnerability_id in vulnerability_ids:
+        try:
+            alias = AdvisoryAlias.objects.get(alias=vulnerability_id)
+            advs = alias.advisories.all()
+            advisories.update(advs)
+
+        except AdvisoryAlias.DoesNotExist:
+            advs = AdvisoryV2.objects.filter(advisory_id=vulnerability_id).latest_per_avid()
+
+            if advs:
+                advisories.update(advs)
+            else:
+                logger(f"No advisory found for ID/alias: {vulnerability_id}")
+
+    return advisories
