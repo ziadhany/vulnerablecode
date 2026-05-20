@@ -8,12 +8,12 @@
 #
 from collections import defaultdict
 
+from aboutcode.federated import get_core_purl
 from aboutcode.pipeline import LoopProgress
 from django.db.models import Prefetch
 from packageurl.contrib.purl2url import purl2url
 from packageurl.contrib.url2purl import url2purl
 
-from aboutcode.federated import get_core_purl
 from vulnerabilities.models import AdvisoryReference
 from vulnerabilities.models import AdvisoryV2
 from vulnerabilities.models import ImpactedPackage
