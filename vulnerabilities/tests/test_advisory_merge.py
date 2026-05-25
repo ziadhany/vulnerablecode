@@ -34,6 +34,7 @@ class TestAdvisoryMerge:
         adv = AdvisoryV2.objects.create(
             datasource_id="ghsa",
             advisory_id=advisory_id,
+            pipeline_id="ghsa_importer_v2",
             avid=f"ghsa/{advisory_id}",
             unique_content_id=unique_content_id,
             url="https://example.com/advisory",

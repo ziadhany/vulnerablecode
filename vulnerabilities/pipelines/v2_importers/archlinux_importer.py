@@ -29,6 +29,7 @@ class ArchLinuxImporterPipeline(VulnerableCodeBaseImporterPipelineV2):
 
     pipeline_id = "archlinux_importer_v2"
     spdx_license_expression = "MIT"
+    datasource_id = "archlinux"
     license_url = "https://github.com/archlinux/arch-security-tracker/blob/master/LICENSE"
 
     precedence = 200

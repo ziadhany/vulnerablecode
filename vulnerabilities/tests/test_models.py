@@ -774,7 +774,10 @@ class TestAdvisoryV2Model(DjangoTestCase):
         from vulnerabilities.pipes.advisory import insert_advisory_v2
 
         insert_advisory_v2(
-            advisory=self.advisoryv2_data1, pipeline_id="test_pipeline", logger=self.logger.write
+            advisory=self.advisoryv2_data1,
+            pipeline_id="test_pipeline",
+            logger=self.logger.write,
+            datasource_id="test",
         )
         result = models.AdvisoryV2.objects.first().to_advisory_data()
 
@@ -820,10 +823,16 @@ class TestAdvisoryV2ModelDuplication(DjangoTestCase):
         from vulnerabilities.pipes.advisory import insert_advisory_v2
 
         insert_advisory_v2(
-            advisory=self.advisoryv2_data1, pipeline_id="test_pipeline", logger=self.logger.write
+            advisory=self.advisoryv2_data1,
+            pipeline_id="test_pipeline",
+            logger=self.logger.write,
+            datasource_id="test",
         )
         insert_advisory_v2(
-            advisory=self.advisoryv2_data2, pipeline_id="test_pipeline", logger=self.logger.write
+            advisory=self.advisoryv2_data2,
+            pipeline_id="test_pipeline",
+            logger=self.logger.write,
+            datasource_id="test",
         )
         result = models.AdvisoryV2.objects.count()
 

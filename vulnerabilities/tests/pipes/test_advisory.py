@@ -323,15 +323,17 @@ class TestLatestAdvisoryV2(TestCase):
             advisory=self.advisory1,
             pipeline_id="test_pipeline_v2",
             logger=self.logger.write,
+            datasource_id="test",
         )
 
     def test_latest_advisory_update_on_advisory_insert(self):
-        adv_old = AdvisoryV2.objects.get(avid="test_pipeline_v2/GHSA-1234", is_latest=True)
+        adv_old = AdvisoryV2.objects.get(avid="test/GHSA-1234", is_latest=True)
         insert_advisory_v2(
             advisory=self.advisory2,
             pipeline_id="test_pipeline_v2",
             logger=self.logger.write,
+            datasource_id="test",
         )
-        adv_new = AdvisoryV2.objects.get(avid="test_pipeline_v2/GHSA-1234", is_latest=True)
+        adv_new = AdvisoryV2.objects.get(avid="test/GHSA-1234", is_latest=True)
         self.assertEqual("Test advisory old", adv_old.summary)
         self.assertEqual("Test advisory new", adv_new.summary)

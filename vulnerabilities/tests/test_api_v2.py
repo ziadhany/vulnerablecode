@@ -791,6 +791,7 @@ class CodeFixV2APITest(APITestCase):
     def setUp(self):
         self.advisory = AdvisoryV2.objects.create(
             datasource_id="test_source",
+            pipeline_id="test_source_v2",
             advisory_id="TEST-2025-001",
             avid="test_source/TEST-2025-001",
             unique_content_id="a" * 64,

@@ -37,6 +37,7 @@ class MattermostImporterPipeline(VulnerableCodeBaseImporterPipelineV2):
     """
 
     pipeline_id = "mattermost_importer_v2"
+    datasource_id = "mattermost"
     url = "https://securityupdates.mattermost.com/security_updates.json"
     spdx_license_expression = "LicenseRef-scancode-other-permissive"
 

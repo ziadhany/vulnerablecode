@@ -35,6 +35,7 @@ class PostgreSQLImporterPipeline(VulnerableCodeBaseImporterPipelineV2):
     license_url = "https://www.postgresql.org/about/licence/"
     spdx_license_expression = "PostgreSQL"
     base_url = "https://www.postgresql.org/support/security/"
+    datasource_id = "postgresql"
 
     links = set()
 

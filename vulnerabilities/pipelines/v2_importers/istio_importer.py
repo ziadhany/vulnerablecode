@@ -40,6 +40,7 @@ class IstioImporterPipeline(VulnerableCodeBaseImporterPipelineV2):
     """
 
     pipeline_id = "istio_importer_v2"
+    datasource_id = "istio"
     spdx_license_expression = "Apache-2.0"
     license_url = "https://github.com/istio/istio.io/blob/master/LICENSE"
     repo_url = "git+https://github.com/istio/istio.io"

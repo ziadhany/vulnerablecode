@@ -241,6 +241,7 @@ class TestComputeContentIdV2(TestCase):
         insert_advisory_v2(
             advisory=self.advisory1,
             pipeline_id="test_pipeline_v2",
+            datasource_id="test",
             logger=self.logger.write,
         )
 

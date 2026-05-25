@@ -31,7 +31,8 @@ def advisory_factory(db):
                 advisory_id=advisory_id,
                 url="https://example.com/advisory",
             ),
-            pipeline_id="source",
+            pipeline_id="source_importer_v2",
+            datasource_id="source",
             logger=logger.write,
         )
 

@@ -292,6 +292,7 @@ def insert_advisory_v2(
     advisory: AdvisoryDataV2,
     pipeline_id: str,
     logger: Callable,
+    datasource_id: str,
     precedence: int = 0,
 ):
     from vulnerabilities.models import ImpactedPackage
@@ -303,9 +304,10 @@ def insert_advisory_v2(
     content_id = compute_content_id_v2(advisory_data=advisory)
     try:
         default_data = {
-            "datasource_id": pipeline_id,
+            "datasource_id": datasource_id,
+            "pipeline_id": pipeline_id,
             "advisory_id": advisory.advisory_id,
-            "avid": f"{pipeline_id}/{advisory.advisory_id}",
+            "avid": f"{datasource_id}/{advisory.advisory_id}",
             "summary": advisory.summary,
             "date_published": advisory.date_published,
             "original_advisory_text": advisory.original_advisory_text,
@@ -315,7 +317,8 @@ def insert_advisory_v2(
 
         advisory_obj, created = AdvisoryV2.objects.get_or_create(
             advisory_id=advisory.advisory_id,
-            datasource_id=pipeline_id,
+            datasource_id=datasource_id,
+            pipeline_id=pipeline_id,
             unique_content_id=content_id,
             defaults=default_data,
         )
@@ -335,7 +338,7 @@ def insert_advisory_v2(
         return advisory_obj
 
     AdvisoryV2.objects.filter(
-        avid=f"{pipeline_id}/{advisory.advisory_id}",
+        avid=f"{datasource_id}/{advisory.advisory_id}",
         is_latest=True,
     ).update(is_latest=False)
     advisory_obj.is_latest = True

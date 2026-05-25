@@ -39,6 +39,7 @@ class RubyImporterPipeline(VulnerableCodeBaseImporterPipelineV2):
     repo_url = "git+https://github.com/rubysec/ruby-advisory-db"
     importer_name = "Ruby Importer"
     pipeline_id = "ruby_importer_v2"
+    datasource_id = "ruby_advisory_db"
     spdx_license_expression = "LicenseRef-scancode-public-domain-disclaimer"
     notice = """
     If you submit code or data to the ruby-advisory-db that is copyrighted by

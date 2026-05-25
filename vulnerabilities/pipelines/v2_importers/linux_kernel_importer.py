@@ -30,6 +30,7 @@ class LinuxKernelPipeline(VulnerableCodeBaseImporterPipelineV2):
     """
 
     pipeline_id = "linux_kernel_cves_fix_commits"
+    datasource_id = "linux_kernel"
     spdx_license_expression = "Apache-2.0"
     license_url = "https://github.com/nluedtke/linux_kernel_cves/blob/master/LICENSE"
     run_once = True

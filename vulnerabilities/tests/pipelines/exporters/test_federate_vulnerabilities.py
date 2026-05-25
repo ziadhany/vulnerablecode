@@ -87,11 +87,13 @@ class TestFederatePackageVulnerabilities(TestCase):
             advisory=advisory1,
             pipeline_id="test_pipeline_v2",
             logger=self.logger.write,
+            datasource_id="test",
         )
         insert_advisory_v2(
             advisory=advisory2,
             pipeline_id="test_pipeline_v2",
             logger=self.logger.write,
+            datasource_id="test",
         )
 
     @patch(
