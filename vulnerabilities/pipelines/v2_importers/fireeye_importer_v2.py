@@ -30,6 +30,7 @@ logger = logging.getLogger(__name__)
 
 class FireeyeImporterPipeline(VulnerableCodeBaseImporterPipelineV2):
     spdx_license_expression = "CC-BY-SA-4.0 AND MIT"
+    datasource_id = "fireeye"
     license_url = "https://github.com/mandiant/Vulnerability-Disclosures/blob/master/README.md"
     notice = """
     Copyright (c) Mandiant

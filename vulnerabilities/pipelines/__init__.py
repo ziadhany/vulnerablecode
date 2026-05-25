@@ -273,7 +273,7 @@ class VulnerableCodeBaseImporterPipelineV2(VulnerableCodePipeline):
 
     pipeline_id = None  # Unique Pipeline ID, this should be the name of pipeline module.
     license_url = None
-    datasource_name = None
+    datasource_id = None
     spdx_license_expression = None
     repo_url = None
     ignorable_versions = []
@@ -319,6 +319,9 @@ class VulnerableCodeBaseImporterPipelineV2(VulnerableCodePipeline):
         raise NotImplementedError
 
     def collect_and_store_advisories(self):
+        if not self.pipeline_id and not self.datasource_id:
+            self.log("Pipeline must have a unique pipeline_id or datasource_id defined.")
+            return
         collected_advisory_count = 0
         estimated_advisory_count = self.advisories_count()
 
@@ -338,6 +341,7 @@ class VulnerableCodeBaseImporterPipelineV2(VulnerableCodePipeline):
                 if _obj := insert_advisory_v2(
                     advisory=advisory,
                     pipeline_id=self.pipeline_id,
+                    datasource_id=self.datasource_id,
                     logger=self.log,
                     precedence=self.precedence,
                 ):

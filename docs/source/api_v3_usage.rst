@@ -143,6 +143,7 @@ Example response:
                 "affected_by_vulnerabilities": [
                     {
                     "advisory_id": "GHSA-g5vw-3h65-2q3v",
+                    "advisory_uid": "ghsa/g5vw-3h65-2q3v",
                     "aliases": [],
                     "weighted_severity": null,
                     "exploitability_score": null,
@@ -189,6 +190,7 @@ Example response:
                 "affected_by_vulnerabilities": [
                 {
                     "advisory_id": "GHSA-g5vw-3h65-2q3v",
+                    "advisory_uid": "ghsa/g5vw-3h65-2q3v",
                     "aliases": [],
                     "weighted_severity": null,
                     "exploitability_score": null,

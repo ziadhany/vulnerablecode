@@ -32,7 +32,8 @@ class APIV3TestCase(APITestCase):
                 advisory_id="GHSA-1234",
                 url="https://example.com/advisory",
             ),
-            pipeline_id="ghsa",
+            pipeline_id="ghsa_pipeline_v2",
+            datasource_id="ghsa",
             logger=self.logger.write,
         )
 
@@ -94,7 +95,8 @@ class APIV3TestCase(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         advisory = response.data["results"][0]
-        self.assertEqual(advisory["advisory_id"], "ghsa/GHSA-1234")
+        self.assertEqual(advisory["advisory_id"], "GHSA-1234")
+        self.assertEqual(advisory["advisory_uid"], "ghsa/GHSA-1234")
 
     def test_affected_by_advisories_list(self):
         url = reverse("affected-by-advisories-list")
@@ -109,7 +111,7 @@ class APIV3TestCase(APITestCase):
 
         results = response.data["results"]
         self.assertEqual(len(results), 1)
-        self.assertEqual(results[0]["advisory_id"], "ghsa/GHSA-1234")
+        self.assertEqual(results[0]["advisory_id"], "GHSA-1234")
 
     def test_fixing_advisories_list_empty(self):
         url = reverse("fixing-advisories-list")
@@ -180,7 +182,7 @@ class APIV3TestCaseOnePackageMultipleAdvisories(APITestCase):
                 original_advisory_text="Sample advisory text",
             )
 
-            insert_advisory_v2(advisory, "ghsa_importer", print, 100)
+            insert_advisory_v2(advisory, "ghsa_importer", print, "ghsa", 100)
 
         self.client = APIClient(enforce_csrf_checks=True)
 
@@ -197,7 +199,7 @@ class APIV3TestCaseOnePackageMultipleAdvisories(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data["results"]), 100)
         advisory = response.data["results"][0]
-        self.assertEqual(advisory["advisory_id"], "ghsa_importer/GHSA-12341")
+        self.assertEqual(advisory["advisory_id"], "GHSA-12341")
 
 
 class APIV3TestCaseOneAdvisoryMultiplePackages(APITestCase):
@@ -223,7 +225,7 @@ class APIV3TestCaseOneAdvisoryMultiplePackages(APITestCase):
             original_advisory_text="Sample advisory text",
         )
 
-        insert_advisory_v2(advisory, "ghsa_importer", print, 100)
+        insert_advisory_v2(advisory, "ghsa_importer", print, "ghsa", 100)
 
         self.client = APIClient(enforce_csrf_checks=True)
 

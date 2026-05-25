@@ -26,16 +26,18 @@ def test_relate_severities_by_advisory_id():
         url="https://example.com/advisory/CVE-2024-0001",
         date_collected="2024-01-01",
         is_latest=True,
+        pipeline_id="test_pipeline_v2",
     )
 
     severity_advisory = AdvisoryV2.objects.create(
         advisory_id="CVE-2024-0001",
-        datasource_id="epss_importer_v2",
+        datasource_id="epss",
         avid="epss/CVE-2024-0001",
         unique_content_id="ab2",
         url="https://example.com/epss/CVE-2024-0001",
         date_collected="2024-01-02",
         is_latest=True,
+        pipeline_id="epss_importer_v2",
     )
     severity_advisory.severities.create(
         scoring_system=EPSS.identifier,
@@ -62,18 +64,20 @@ def test_relate_severities_via_alias():
         url="https://example.com/advisory/CVE-2024-0002",
         date_collected="2024-01-01",
         is_latest=True,
+        pipeline_id="nvd_importer_v2",
     )
 
     base.aliases.create(alias="CVE-2024-ALIAS")
 
     severity_advisory = AdvisoryV2.objects.create(
         advisory_id="CVE-2024-ALIAS",
-        datasource_id="epss_importer_v2",
+        datasource_id="epss",
         avid="epss/CVE-2024-ALIAS",
         unique_content_id="ab4",
         url="https://example.com/epss/CVE-2024-ALIAS",
         date_collected="2024-01-02",
         is_latest=True,
+        pipeline_id="epss_importer_v2",
     )
     severity_advisory.severities.create(
         scoring_system=EPSS.identifier,
@@ -90,12 +94,13 @@ def test_relate_severities_via_alias():
 def test_no_self_relation_created():
     advisory = AdvisoryV2.objects.create(
         advisory_id="CVE-2024-0003",
-        datasource_id="epss_importer_v2",
+        datasource_id="epss",
         unique_content_id="ab5",
         url="https://example.com/advisory/CVE-2024-0003",
         date_collected="2024-01-03",
         avid="epss/CVE-2024-0003",
         is_latest=True,
+        pipeline_id="epss_importer_v2",
     )
     advisory.severities.create(
         scoring_system=EPSS.identifier,
@@ -118,16 +123,18 @@ def test_unsupported_severity_system_is_ignored():
         date_collected="2024-01-01",
         avid="nvd/CVE-2024-0004",
         is_latest=True,
+        pipeline_id="nvd_importer_v2",
     )
 
     severity_advisory = AdvisoryV2.objects.create(
         advisory_id="CVE-2024-0004",
-        datasource_id="epss_importer_v2",
+        datasource_id="epss",
         unique_content_id="ab7",
         url="https://example.com/epss/CVE-2024-0004",
         date_collected="2024-01-02",
         avid="epss/CVE-2024-0004",
         is_latest=True,
+        pipeline_id="epss_importer_v2",
     )
     severity_advisory.severities.create(
         scoring_system="UNKNOWN_SYSTEM",
@@ -145,6 +152,7 @@ def test_pipeline_is_idempotent():
     base = AdvisoryV2.objects.create(
         advisory_id="CVE-2024-0005",
         datasource_id="nvd",
+        pipeline_id="nvd_importer_v2",
         unique_content_id="ab8",
         url="https://example.com/advisory/CVE-2024-0005",
         date_collected="2024-01-01",
@@ -154,12 +162,13 @@ def test_pipeline_is_idempotent():
 
     severity = AdvisoryV2.objects.create(
         advisory_id="CVE-2024-0005",
-        datasource_id="epss_importer_v2",
+        datasource_id="epss",
         unique_content_id="ab9",
         url="https://example.com/epss/CVE-2024-0005",
         date_collected="2024-01-02",
         is_latest=True,
         avid="epss/CVE-2024-0005",
+        pipeline_id="epss_importer_v2",
     )
     severity.severities.create(
         scoring_system=EPSS.identifier,

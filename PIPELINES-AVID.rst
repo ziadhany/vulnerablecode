@@ -1,11 +1,13 @@
-.. list-table:: Pipeline AVID Mapping
+.. list-table:: Pipeline Advisory UID Mapping
    :header-rows: 1
    :widths: 35 65
 
    * - pipeline name
-     - AVID
+     - Advisory UID
+     - datasource name
    * - alpine_linux_importer_v2
      - {package_name}/{distroversion}/{version}/{vulnerability_id}
+     - alpine_linux
    * - aosp_dataset_fix_commits
      - CVE ID of the record
    * - apache_httpd_importer_v2

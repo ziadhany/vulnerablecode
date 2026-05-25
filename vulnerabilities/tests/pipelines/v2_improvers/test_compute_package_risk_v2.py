@@ -30,6 +30,7 @@ def test_simple_risk_pipeline():
         advisory_id="VCID-Existing",
         summary="vulnerability description here",
         datasource_id="ds",
+        pipeline_id="ds_importer_v2",
         avid="ds/VCID-Existing",
         unique_content_id="ajkef",
         url="https://test.com",

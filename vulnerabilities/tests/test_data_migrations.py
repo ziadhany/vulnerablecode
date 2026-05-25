@@ -983,6 +983,7 @@ class TestCodeCommitMigration(TestMigrations):
             advisory_id="old_adv",
             avid="test_pipeline/old_adv",
             datasource_id="test_pipeline",
+            # pipeline_id="test_pipeline_v2",
         )
         ImpactedPackage.objects.create(advisory=adv, base_purl="pkg:pypi/oldpkg")
 
@@ -1052,6 +1053,7 @@ class TestLatestAdvisoryV2Migration(TestMigrations):
             advisory_id="test_adv",
             avid="test_pipeline/test_adv",
             datasource_id="test_pipeline",
+            # pipeline_id="test_pipeline_v2",
         )
 
         AdvisoryV2.objects.create(
@@ -1061,6 +1063,7 @@ class TestLatestAdvisoryV2Migration(TestMigrations):
             advisory_id="test_adv",
             avid="test_pipeline/test_adv",
             datasource_id="test_pipeline",
+            # pipeline_id="test_pipeline_v2",
         )
 
         AdvisoryV2.objects.create(
@@ -1070,10 +1073,11 @@ class TestLatestAdvisoryV2Migration(TestMigrations):
             advisory_id="test_adv",
             avid="test_pipeline/test_adv",
             datasource_id="test_pipeline",
+            # pipeline_id="test_pipeline_v2",
         )
 
     def test_no_duplicate_is_latest_for_avid(self):
-        AdvisoryV2 = apps.get_model("vulnerabilities", "AdvisoryV2")
+        AdvisoryV2 = self.apps.get_model("vulnerabilities", "AdvisoryV2")
 
         duplicate = (
             AdvisoryV2.objects.filter(is_latest=True)
@@ -1085,7 +1089,7 @@ class TestLatestAdvisoryV2Migration(TestMigrations):
         self.assertFalse(duplicate.exists())
 
     def test_latest_is_actually_recent(self):
-        AdvisoryV2 = apps.get_model("vulnerabilities", "AdvisoryV2")
+        AdvisoryV2 = self.apps.get_model("vulnerabilities", "AdvisoryV2")
 
         latest = AdvisoryV2.objects.get(avid="test_pipeline/test_adv", is_latest=True)
         self.assertEqual("New advisory", latest.summary)
@@ -1166,6 +1170,7 @@ class TestMalformedAliasesAVIDMigration(TestMigrations):
                 advisory_id=raw_input,
                 avid=f"alpine_linux_importer_v2/{raw_input}",
                 datasource_id="alpine_linux_importer_v2",
+                # pipeline_id="test_pipeline_v2",
             )
             alias = AdvisoryAlias.objects.create(alias=raw_input)
             adv.aliases.add(alias)
@@ -1203,6 +1208,7 @@ class TestCleanVersRangeMigration(TestMigrations):
             advisory_id="test_adv1",
             avid="test_pipeline/test_adv",
             datasource_id="test_pipeline",
+            # pipeline_id="test_pipeline_v2",
         )
 
         self.advisory2 = AdvisoryV2.objects.create(
@@ -1212,6 +1218,7 @@ class TestCleanVersRangeMigration(TestMigrations):
             advisory_id="test_adv2",
             avid="test_pipeline/test_adv",
             datasource_id="test_pipeline",
+            # pipeline_id="test_pipeline_v2",
         )
 
         ImpactedPackage.objects.create(

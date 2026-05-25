@@ -37,6 +37,7 @@ class NpmImporterPipeline(VulnerableCodeBaseImporterPipelineV2):
     """
 
     pipeline_id = "nodejs_security_wg"
+    datasource_id = "npm"
     spdx_license_expression = "MIT"
     license_url = "https://github.com/nodejs/security-wg/blob/main/LICENSE.md"
     repo_url = "git+https://github.com/nodejs/security-wg"

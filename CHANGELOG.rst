@@ -4,7 +4,8 @@ Release notes
 next release
 ---------------------
 
-- WARNING: Vulnerablecode V1 API and UI has stopped supporting Ubuntu OVAL advisories, please shift to V3 API for new Ubuntu advisories. 
+- WARNING: Vulnerablecode V1 API and UI has stopped supporting Ubuntu OVAL advisories, please shift to V3 API for new Ubuntu advisories.
+- Add attribute ``pipeline_id`` to AdvisoryV2 to track the pipeline that created the advisory, also rename existing ``datasource_id`` and AVIDs. 
 
 Version v38.6.0
 ---------------------

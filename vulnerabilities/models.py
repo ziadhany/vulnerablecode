@@ -3058,7 +3058,15 @@ class AdvisoryV2(models.Model):
         blank=False,
         null=False,
         db_index=True,
-        help_text="Unique ID for the datasource used for this advisory ." "e.g.: nginx_importer_v2",
+        help_text="Unique ID for the datasource used for this advisory ." "e.g.: nginx",
+    )
+
+    pipeline_id = models.CharField(
+        max_length=200,
+        blank=False,
+        null=False,
+        db_index=True,
+        help_text="Unique ID for the pipeline used for this advisory ." "e.g.: nginx_importer_v2",
     )
 
     # This is similar to a name

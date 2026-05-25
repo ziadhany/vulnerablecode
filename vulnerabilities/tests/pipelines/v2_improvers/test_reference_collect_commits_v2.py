@@ -29,6 +29,7 @@ def test_collect_fix_commits_pipeline_creates_entry():
         url="https://example.com/advisory/CVE-2025-1000",
         unique_content_id="11111",
         date_collected=datetime.now(),
+        pipeline_id="test-pipeline",
     )
 
     reference = AdvisoryReference.objects.create(
@@ -60,6 +61,7 @@ def test_collect_fix_commits_pipeline_skips_non_commit_urls():
         url="https://example.com/advisory/CVE-2025-2000",
         unique_content_id="11111",
         date_collected=datetime.now(),
+        pipeline_id="test-pipeline",
     )
 
     reference = AdvisoryReference.objects.create(

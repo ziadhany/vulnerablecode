@@ -30,6 +30,7 @@ class GlibcImporterPipeline(VulnerableCodeBaseImporterPipelineV2):
     """
 
     pipeline_id = "glibc_importer_v2"
+    datasource_id = "glibc"
     spdx_license_expression = "LGPL-2.1-only"
     license_url = "https://sourceware.org/git/?p=glibc.git;a=blob_plain;f=LICENSES"
     repo_url = "git+https://sourceware.org/git/glibc.git"

@@ -59,7 +59,7 @@ class RelateSeveritiesPipeline(VulnerableCodePipeline):
         """
         # Filter severities by supported scoring systems
         severity_score_advisories = (
-            AdvisoryV2.objects.filter(datasource_id__in=self.pipelines)
+            AdvisoryV2.objects.filter(pipeline_id__in=self.pipelines)
             .filter(severities__scoring_system__in=self.SUPPORTED_SYSTEMS)
             .latest_per_avid()
             .distinct()

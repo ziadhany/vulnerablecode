@@ -28,6 +28,7 @@ class AospImporterPipeline(VulnerableCodeBaseImporterPipelineV2):
     """
 
     pipeline_id = "aosp_dataset_fix_commits"
+    datasource_id = "aosp_dataset"
     spdx_license_expression = "Apache-2.0"
     license_url = "https://github.com/quarkslab/aosp_dataset/blob/master/LICENSE"
 

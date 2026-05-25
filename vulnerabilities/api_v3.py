@@ -113,7 +113,7 @@ class AdvisoryV3Serializer(serializers.ModelSerializer):
     weaknesses = AdvisoryWeaknessSerializer(many=True)
     references = AdvisoryReferenceSerializer(many=True)
     severities = AdvisorySeveritySerializer(many=True)
-    advisory_id = serializers.CharField(source="avid", read_only=True)
+    advisory_uid = serializers.CharField(source="avid", read_only=True)
     related_ssvc_trees = serializers.SerializerMethodField()
 
     def get_related_ssvc_trees(self, obj):
@@ -143,6 +143,7 @@ class AdvisoryV3Serializer(serializers.ModelSerializer):
         model = AdvisoryV2
         fields = [
             "advisory_id",
+            "advisory_uid",
             "url",
             "aliases",
             "summary",
@@ -270,6 +271,7 @@ class PackageV3Serializer(serializers.ModelSerializer):
                 result.append(
                     {
                         "advisory_id": advisory.advisory_id.split("/")[-1],
+                        "advisory_uid": advisory.avid,
                         "aliases": [alias.alias for alias in advisory.aliases.all()],
                         "summary": advisory.summary,
                         "severity": advisory.weighted_severity,
@@ -313,6 +315,7 @@ class PackageV3Serializer(serializers.ModelSerializer):
                 results.append(
                     {
                         "advisory_id": advisory.advisory_id.split("/")[-1],
+                        "advisory_uid": advisory.avid,
                     }
                 )
             return results
@@ -337,6 +340,7 @@ class PackageV3Serializer(serializers.ModelSerializer):
             result.append(
                 {
                     "advisory_id": advisory.identifier,
+                    "advisory_uid": advisory.advisory.avid,
                 }
             )
 
@@ -364,6 +368,7 @@ class PackageV3Serializer(serializers.ModelSerializer):
             result.append(
                 {
                     "advisory_id": advisory.identifier,
+                    "advisory_uid": advisory.advisory.avid,
                     "aliases": [alias.alias for alias in advisory.aliases],
                     "weighted_severity": advisory.weighted_severity,
                     "exploitability": advisory.exploitability,
@@ -471,6 +476,7 @@ class PackageV3ViewSet(viewsets.GenericViewSet):
 
 class AffectedByAdvisoryV3Serializer(AdvisoryV3Serializer):
     fixed_by_packages = serializers.SerializerMethodField()
+    advisory_uid = serializers.CharField(source="avid", read_only=True)
 
     def get_fixed_by_packages(self, obj):
         return list(
@@ -483,6 +489,7 @@ class AffectedByAdvisoryV3Serializer(AdvisoryV3Serializer):
         model = AdvisoryV2
         fields = [
             "advisory_id",
+            "advisory_uid",
             "url",
             "aliases",
             "summary",
@@ -623,8 +630,8 @@ def get_affected_advisories_bulk(packages):
 
             grouped.append(
                 {
-                    "avid": primary.avid,
                     "advisory_id": identifier,
+                    "advisory_uid": primary.avid,
                     "aliases": aliases,
                     "weighted_severity": weighted_severity,
                     "exploitability": exploitability,
@@ -699,7 +706,9 @@ def get_fixing_advisories_bulk(packages):
         grouped = []
 
         for adv_id in groups:
-            grouped.append({"advisory_id": adv_id.split("/")[-1]})
+            grouped.append(
+                {"advisory_id": adv_id.split("/")[-1], "advisory_uid": adv_id.split("/")[-1]}
+            )
 
         result[package.id] = grouped
 

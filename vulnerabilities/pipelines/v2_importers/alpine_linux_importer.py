@@ -38,6 +38,7 @@ class AlpineLinuxImporterPipeline(VulnerableCodeBaseImporterPipelineV2):
 
     pipeline_id = "alpine_linux_importer_v2"
     spdx_license_expression = "CC-BY-SA-4.0"
+    datasource_id = "alpine_linux"
     license_url = "https://secdb.alpinelinux.org/license.txt"
     repo_url = "git+https://github.com/aboutcode-org/aboutcode-mirror-alpine-secdb/"
 

@@ -99,6 +99,7 @@ class TestUnfurlVersionRangePipeline(TestCase):
             advisory=self.advisory1,
             pipeline_id="test_pipeline_v2",
             logger=self.logger.write,
+            datasource_id="test",
         )
         self.assertEqual(1, PackageV2.objects.count())
         mock_fetch.return_value = {"3.4.1", "3.9.0", "2.1.0", "4.0.0", "4.1.0"}
@@ -119,6 +120,7 @@ class TestUnfurlVersionRangePipeline(TestCase):
             advisory=self.advisory2,
             pipeline_id="test_pipeline_v2",
             logger=self.logger.write,
+            datasource_id="test",
         )
 
         self.assertEqual(3, ImpactedPackage.objects.count())
@@ -129,6 +131,7 @@ class TestUnfurlVersionRangePipeline(TestCase):
             advisory=self.advisory2,
             pipeline_id="test_pipeline_v2",
             logger=self.logger.write,
+            datasource_id="test",
         )
         impact = ImpactedPackage.objects.filter(affecting_vers__isnull=False).first()
         impact.last_range_unfurl_at = timezone.now()
@@ -141,6 +144,7 @@ class TestUnfurlVersionRangePipeline(TestCase):
             advisory=self.advisory2,
             pipeline_id="test_pipeline_v2",
             logger=self.logger.write,
+            datasource_id="test",
         )
         impact = ImpactedPackage.objects.filter(affecting_vers__isnull=False).first()
         impact.last_range_unfurl_at = timezone.now() - timedelta(days=4)
@@ -155,6 +159,7 @@ class TestUnfurlVersionRangePipeline(TestCase):
             advisory=self.advisory2,
             pipeline_id="test_pipeline_v2",
             logger=self.logger.write,
+            datasource_id="test",
         )
         impact = ImpactedPackage.objects.filter(affecting_vers__isnull=False).first()
         impact.last_range_unfurl_at = timezone.now()

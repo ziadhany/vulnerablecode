@@ -185,6 +185,7 @@ class TestComputeToDo(TestCase):
             advisory=self.advisory_data1,
             pipeline_id="test_pipeline1",
             logger=self.log.write,
+            datasource_id="test1",
         )
         adv = AdvisoryV2.objects.first()
         adv.summary = ""
@@ -202,6 +203,7 @@ class TestComputeToDo(TestCase):
             advisory=self.advisory_data2,
             pipeline_id="test_pipeline1",
             logger=self.log.write,
+            datasource_id="test1",
         )
         pipeline = ComputeToDo()
         pipeline.execute()
@@ -214,8 +216,9 @@ class TestComputeToDo(TestCase):
     def test_advisory_todo_missing_affected(self):
         insert_advisory_v2(
             advisory=self.advisory_data3,
-            pipeline_id="test_pipeline1",
             logger=self.log.write,
+            datasource_id="test1",
+            pipeline_id="test_pipeline1",
         )
         pipeline = ComputeToDo()
         pipeline.execute()
@@ -228,13 +231,15 @@ class TestComputeToDo(TestCase):
     def test_advisory_todo_conflicting_fixed_affected(self):
         insert_advisory_v2(
             advisory=self.advisory_data1,
-            pipeline_id="test_pipeline1",
             logger=self.log.write,
+            datasource_id="test1",
+            pipeline_id="test_pipeline1",
         )
         insert_advisory_v2(
             advisory=self.advisory_data4,
-            pipeline_id="test_pipeline2",
             logger=self.log.write,
+            datasource_id="test4",
+            pipeline_id="test_pipeline4",
         )
         for imp in ImpactedPackage.objects.all():
             imp.last_successful_range_unfurl_at = datetime.now()
@@ -249,7 +254,7 @@ class TestComputeToDo(TestCase):
         self.assertEqual(1, AdvisoryToDoV2.objects.count())
         self.assertEqual("CONFLICTING_AFFECTED_AND_FIXED_BY_PACKAGES", todo.issue_type)
         self.assertIn(
-            '"conflict_checksum": "57f32de5f41f137f0e3808535c2d974d54eeeda426c4279e7fb90475d26f0313",',
+            '"conflict_checksum": "87d9e2627a8461fc5c068335d822af4aa0a40a8f265a92895c51d275d97ab0d6",',
             todo.issue_detail,
         )
         self.assertEqual(2, todo.advisories.count())
@@ -260,11 +265,13 @@ class TestComputeToDo(TestCase):
             advisory=self.advisory_data4,
             pipeline_id="test_pipeline4",
             logger=self.log.write,
+            datasource_id="test4",
         )
         insert_advisory_v2(
             advisory=self.advisory_data5,
             pipeline_id="test_pipeline5",
             logger=self.log.write,
+            datasource_id="test5",
         )
         for imp in ImpactedPackage.objects.all():
             imp.last_successful_range_unfurl_at = datetime.now()
@@ -280,7 +287,7 @@ class TestComputeToDo(TestCase):
         expected_partial_curation_advisory = {
             "advisory_id": "PLACEHOLDER_PARTIAL_CURATION_AVID",
             "aliases": ["CVE-000-000"],
-            "summary": "('test_pipeline5/test_id_5', 'test_pipeline6/test_id_6'): Test summary",
+            "summary": "('test5/test_id_5', 'test6/test_id_6'): Test summary",
             "affected_packages": [
                 {
                     "package": {
@@ -353,11 +360,13 @@ class TestComputeToDo(TestCase):
             advisory=self.advisory_data5,
             pipeline_id="test_pipeline5",
             logger=self.log.write,
+            datasource_id="test5",
         )
         insert_advisory_v2(
             advisory=self.advisory_data6,
             pipeline_id="test_pipeline6",
             logger=self.log.write,
+            datasource_id="test6",
         )
         for imp in ImpactedPackage.objects.all():
             imp.last_successful_range_unfurl_at = datetime.now()
@@ -372,6 +381,8 @@ class TestComputeToDo(TestCase):
         result_partial_curation = issue_details["partial_curation_advisory"]
         self.assertEqual(1, AdvisoryToDoV2.objects.count())
         self.assertEqual("CONFLICTING_FIXED_BY_PACKAGES", todo.issue_type)
+        print(result_partial_curation)
+        # breakpoint()
         self.assertDictEqual(expected_partial_curation_advisory, result_partial_curation)
 
     def test_todo_conflict_details_partial_curation_unpaired_purl_and_conflicting_affected_and_fixed(
@@ -380,7 +391,7 @@ class TestComputeToDo(TestCase):
         expected_partial_curation_advisory = {
             "advisory_id": "PLACEHOLDER_PARTIAL_CURATION_AVID",
             "aliases": ["CVE-000-000"],
-            "summary": "('test_pipeline1/test_id', 'test_pipeline5/test_id_5'): Test summary",
+            "summary": "('test1/test_id', 'test5/test_id_5'): Test summary",
             "affected_packages": [
                 {
                     "package": {
@@ -411,11 +422,13 @@ class TestComputeToDo(TestCase):
             advisory=self.advisory_data5,
             pipeline_id="test_pipeline5",
             logger=self.log.write,
+            datasource_id="test5",
         )
         insert_advisory_v2(
             advisory=self.advisory_data1,
             pipeline_id="test_pipeline1",
             logger=self.log.write,
+            datasource_id="test1",
         )
         for imp in ImpactedPackage.objects.all():
             imp.last_successful_range_unfurl_at = datetime.now()
@@ -430,13 +443,15 @@ class TestComputeToDo(TestCase):
         result_partial_curation = issue_details["partial_curation_advisory"]
         self.assertEqual(1, AdvisoryToDoV2.objects.count())
         self.assertEqual("CONFLICTING_AFFECTED_AND_FIXED_BY_PACKAGES", todo.issue_type)
+        print(result_partial_curation)
+        # breakpoint()
         self.assertDictEqual(expected_partial_curation_advisory, result_partial_curation)
 
     def test_todo_conflict_details_partial_curation_unpaired_purl_and_conflicting_fixed(self):
         expected_partial_curation_advisory = {
             "advisory_id": "PLACEHOLDER_PARTIAL_CURATION_AVID",
             "aliases": ["CVE-000-000"],
-            "summary": "('test_pipeline1/test_id', 'test_pipeline7/test_id_5'): Test summary",
+            "summary": "('test1/test_id', 'test7/test_id_5'): Test summary",
             "affected_packages": [
                 {
                     "package": {
@@ -481,11 +496,13 @@ class TestComputeToDo(TestCase):
             advisory=self.advisory_data1,
             pipeline_id="test_pipeline1",
             logger=self.log.write,
+            datasource_id="test1",
         )
         insert_advisory_v2(
             advisory=self.advisory_data7,
             pipeline_id="test_pipeline7",
             logger=self.log.write,
+            datasource_id="test7",
         )
         for imp in ImpactedPackage.objects.all():
             imp.last_successful_range_unfurl_at = datetime.now()
@@ -500,13 +517,15 @@ class TestComputeToDo(TestCase):
         result_partial_curation = issue_details["partial_curation_advisory"]
         self.assertEqual(1, AdvisoryToDoV2.objects.count())
         self.assertEqual("CONFLICTING_FIXED_BY_PACKAGES", todo.issue_type)
+        print(result_partial_curation)
+        # breakpoint()
         self.assertDictEqual(expected_partial_curation_advisory, result_partial_curation)
 
     def test_todo_conflict_details_partial_curation_unpaired_purl_and_conflicting_affected(self):
         expected_partial_curation_advisory = {
             "advisory_id": "PLACEHOLDER_PARTIAL_CURATION_AVID",
             "aliases": ["CVE-000-000"],
-            "summary": "('test_pipeline1/test_id', 'test_pipeline7/test_id_5'): Test summary",
+            "summary": "('test1/test_id', 'test8/test_id_5'): Test summary",
             "affected_packages": [
                 {
                     "package": {
@@ -549,13 +568,15 @@ class TestComputeToDo(TestCase):
 
         insert_advisory_v2(
             advisory=self.advisory_data1,
-            pipeline_id="test_pipeline1",
             logger=self.log.write,
+            datasource_id="test1",
+            pipeline_id="test_pipeline1",
         )
         insert_advisory_v2(
             advisory=self.advisory_data8,
-            pipeline_id="test_pipeline7",
             logger=self.log.write,
+            datasource_id="test8",
+            pipeline_id="test_pipeline8",
         )
         for imp in ImpactedPackage.objects.all():
             imp.last_successful_range_unfurl_at = datetime.now()
@@ -570,4 +591,6 @@ class TestComputeToDo(TestCase):
         result_partial_curation = issue_details["partial_curation_advisory"]
         self.assertEqual(1, AdvisoryToDoV2.objects.count())
         self.assertEqual("CONFLICTING_AFFECTED_PACKAGES", todo.issue_type)
+        print(result_partial_curation)
+        # breakpoint()
         self.assertDictEqual(expected_partial_curation_advisory, result_partial_curation)

@@ -41,6 +41,7 @@ def test_github_poc_db_improver(mock_fetch_via_vcs):
         unique_content_id="sgsdg45",
         url="https://test.com",
         date_collected=datetime.now(),
+        pipeline_id="ghsa_pipeline_v2",
     )
     adv2 = AdvisoryV2.objects.create(
         advisory_id="VCIO-123-1002",
@@ -49,6 +50,7 @@ def test_github_poc_db_improver(mock_fetch_via_vcs):
         unique_content_id="6hd4d6f",
         url="https://test.com",
         date_collected=datetime.now(),
+        pipeline_id="ghsa_pipeline_v2",
     )
     adv3 = AdvisoryV2.objects.create(
         advisory_id="VCIO-123-1003",
@@ -57,6 +59,7 @@ def test_github_poc_db_improver(mock_fetch_via_vcs):
         unique_content_id="sd6h4sh",
         url="https://test.com",
         date_collected=datetime.now(),
+        pipeline_id="ghsa_pipeline_v2",
     )
 
     alias1 = AdvisoryAlias.objects.create(alias="CVE-2022-0236")
