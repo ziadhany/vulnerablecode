@@ -17,6 +17,7 @@ from aboutcode.pipeline import LoopProgress
 from django.db.models import Prefetch
 from django.utils import timezone
 from packageurl import PackageURL
+from univers.version_range import RANGE_CLASS_BY_SCHEMES
 
 from vulnerabilities.importer import AdvisoryDataV2
 from vulnerabilities.models import AdvisoryAlias
@@ -281,7 +282,7 @@ def check_missing_summary(
     todo_to_create,
     advisory_relation_to_create,
 ):
-    alias = advisory.datasource_id.rsplit("/", 1)[-1]
+    alias = advisory.advisory_id.rsplit("/", 1)[-1]
     oldest_advisory_date = advisory.date_published or advisory.date_collected
     if not advisory.summary:
         todo = AdvisoryToDoV2(
@@ -333,7 +334,7 @@ def check_missing_affected_and_fixed_by_packages(
     elif not has_fixed_package:
         issue_type = "MISSING_FIXED_BY_PACKAGE"
 
-    alias = advisory.datasource_id.rsplit("/", 1)[-1]
+    alias = advisory.advisory_id.rsplit("/", 1)[-1]
     oldest_advisory_date = advisory.date_published or advisory.date_collected
     if issue_type:
         todo = AdvisoryToDoV2(
@@ -360,12 +361,12 @@ def compute_version_range_disagreement(adv_map):
     fixed_intersection = set.intersection(*fixed_sets)
 
     return {
-        "affected_union": affected_union,
-        "affected_intersection": affected_intersection,
-        "affected_disagreement": affected_union - affected_intersection,
-        "fixed_union": fixed_union,
-        "fixed_intersection": fixed_intersection,
-        "fixed_disagreement": fixed_union - fixed_intersection,
+        "affected_union": list(affected_union),
+        "affected_intersection": list(affected_intersection),
+        "affected_disagreement": list(affected_union - affected_intersection),
+        "fixed_union": list(fixed_union),
+        "fixed_intersection": list(fixed_intersection),
+        "fixed_disagreement": list(fixed_union - fixed_intersection),
     }
 
 
@@ -417,6 +418,7 @@ def check_conflicting_affected_and_fixed_by_packages_for_alias(
     """
     conflicting_package_details = {}
 
+    curation_items = []
     has_conflicting_affected_packages = False
     has_conflicting_fixed_package = False
     conflicting_advisories = set()
@@ -433,6 +435,9 @@ def check_conflicting_affected_and_fixed_by_packages_for_alias(
         conflicting_package_details[purl] = {
             "avids": list(adv_map.keys()),
         }
+        curation_items.append(
+            get_grouped_curation_advisories_for_dashboard_ui(purl, adv_map, result, advisories)
+        )
         conflicting_advisories.update([advisories[avid] for avid in adv_map])
         conflicting_package_details[purl].update(result)
 
@@ -462,6 +467,7 @@ def check_conflicting_affected_and_fixed_by_packages_for_alias(
         "conflict_checksum": conflict_checksum,
         "conflict_details": conflicting_package_details,
         "partial_curation_advisory": partial_merged_advisory,
+        "curation_items": curation_items,
     }
 
     todo_id = advisories_checksum(conflicting_advisories)
@@ -484,7 +490,7 @@ def check_conflicting_affected_and_fixed_by_packages_for_alias(
     todo = AdvisoryToDoV2(
         related_advisories_id=todo_id,
         issue_type=issue_type,
-        issue_detail=json.dumps(issue_detail, default=list),
+        issue_detail=issue_detail,
         alias=alias,
         advisories_count=conflicting_advisories_count,
         oldest_advisory_date=date_published or date_collected,
@@ -493,6 +499,94 @@ def check_conflicting_affected_and_fixed_by_packages_for_alias(
     advisory_relation_to_create[todo_id] = conflicting_advisories
 
     return conflicting_package_count, conflicting_advisories_count
+
+
+def get_disagreement_message(fixed_disagreement, affected_disagreement):
+    messages = []
+
+    if affected_disagreement:
+        affected = ", ".join(affected_disagreement)
+        noun = "version" if len(affected_disagreement) == 1 else "versions"
+        verb = "is" if len(affected_disagreement) == 1 else "are"
+
+        messages.append(f"Advisories do not agree whether {noun} {affected} {verb} affected.")
+
+    if fixed_disagreement:
+        fixed = ", ".join(fixed_disagreement)
+        noun = "version" if len(fixed_disagreement) == 1 else "versions"
+        verb = "contains" if len(fixed_disagreement) == 1 else "contain"
+
+        messages.append(f"Advisories do not agree whether {noun} {fixed} {verb} the fix.")
+
+    return " ".join(messages)
+
+
+def get_grouped_curation_advisories_for_dashboard_ui(purl, adv_map, conflict_detail, advisories):
+    """
+    Return curation details for the PURL, grouping advisories with similar conflicts based on precedence.
+    """
+    curation_item = {
+        "purl": purl,
+        "partial_curation": {
+            "affected": list(conflict_detail["affected_intersection"]),
+            "fixing": list(conflict_detail["fixed_intersection"]),
+        },
+        "advisories": [],
+    }
+
+    all_versions = conflict_detail["affected_union"] + conflict_detail["fixed_union"]
+    package_url = PackageURL.from_string(purl)
+    range_class = RANGE_CLASS_BY_SCHEMES[package_url.type]
+    version_class = range_class.version_class
+    sorted_versions = sorted([version_class(v) for v in all_versions])
+    curation_item["all_versions"] = [str(v) for v in sorted_versions]
+    curation_item["conflict_reason"] = get_disagreement_message(
+        fixed_disagreement=conflict_detail["fixed_disagreement"],
+        affected_disagreement=conflict_detail["affected_disagreement"],
+    )
+    advisory_by_conflict_range = defaultdict(list)
+    conflict_ranges = {}
+    for avid, packages in adv_map.items():
+        conflict_checksum = sha256_digest(
+            canonical_value(
+                {
+                    "affected": packages["affected"],
+                    "fixed": packages["fixed"],
+                }
+            )
+        )
+        if conflict_checksum not in conflict_ranges:
+            conflict_ranges[conflict_checksum] = {
+                "affected": list(packages["affected"]),
+                "fixing": list(packages["fixed"]),
+            }
+
+        advisory_item = {}
+        advisory_item["advisory_uid"] = avid
+        advisory_item["vers_ranges"] = []
+        advisory = advisories[avid]
+        advisory_item["precedence"] = advisory.precedence
+        advisory_item["advisory_id"] = advisory.advisory_id
+        advisory_item["datasource_id"] = advisory.datasource_id
+        for impact in advisory.impacted_packages.all():
+            if impact.base_purl != purl:
+                continue
+            advisory_item["vers_ranges"].append(
+                {
+                    "affected_vers": impact.affecting_vers,
+                    "fixing_vers": impact.fixed_vers,
+                }
+            )
+
+        advisory_by_conflict_range[conflict_checksum].append(advisory_item)
+
+    for checksum, adv_items in advisory_by_conflict_range.items():
+        primary, *secondaries = sorted(adv_items, key=lambda x: x["precedence"], reverse=True)
+        conflict_ranges[checksum]["primary"] = primary
+        conflict_ranges[checksum]["secondaries"] = secondaries
+
+    curation_item["advisories"] = list(conflict_ranges.values())
+    return curation_item
 
 
 def get_advisory_with_best_impact_for_purls(purl_adv_map, conflicting_avids):
@@ -595,9 +689,10 @@ def merged_advisory(advisories, best_purl_avid_impact_map, conflicting_package_d
             )
 
     for summary, avids in seen_summaries.values():
-        merged_summary.append(f"{tuple(sorted(avids))}: {summary}")
+        avids_str = ", ".join(sorted(avids))
+        merged_summary.append(f"[{avids_str}]: {summary}")
 
-    merged_adv["summary"] = "\n".join(merged_summary)
+    merged_adv["summary"] = "\n\n".join(merged_summary)
     merged_adv["aliases"] = list(merged_adv["aliases"])
     merged_adv["weaknesses"] = list(merged_adv["weaknesses"])
 
@@ -624,7 +719,7 @@ def bulk_create_with_m2m(todos, advisories, logger):
     try:
         AdvisoryToDoV2.objects.bulk_create(objs=todos, ignore_conflicts=True)
     except Exception as e:
-        logger(f"Error creating AdvisoryToDo: {e}")
+        logger(f"Error creating AdvisoryToDoV2: {e}")
 
     new_todos = AdvisoryToDoV2.objects.filter(created_at__gte=start_time)
 
