@@ -122,6 +122,10 @@ Advisory To-Dos
             {% for todo in todo_list %}
             <tr>
                 <td colspan="4">
+                    {% with supported_curation="CONFLICTING_FIXED_BY_PACKAGES CONFLICTING_AFFECTED_PACKAGES CONFLICTING_AFFECTED_AND_FIXED_BY_PACKAGES" %}
+                    {% if todo.issue_type in supported_curation.split %}
+                        <a href="{% url 'todo-detail' todo_id=todo.todo_id %}" class="has-text-info">
+                    {% endif %}
                             <div class="columns px-1 is-vcentered">
                                 <div class="column has-text-left" style="flex: 0 0 20%;">
                                     {{ todo.alias }}
@@ -139,6 +143,10 @@ Advisory To-Dos
                                     {{ todo.get_issue_type_display }}
                                 </div>
                             </div>
+                    {% if todo.issue_type in supported_curation.split %}
+                        </a>
+                    {% endif %}
+                    {% endwith %}
                 </td>
             </tr>
             {% empty %}
