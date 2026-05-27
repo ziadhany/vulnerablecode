@@ -4,6 +4,7 @@
 {% load static %}
 {% load show_cvss %}
 {% load url_filters %}
+{% load utils %}
 
 {% block title %}
 VulnerableCode Advisory Details - {{ advisory.advisory_id }}
@@ -115,7 +116,7 @@ VulnerableCode Advisory Details - {{ advisory.advisory_id }}
                             </tr>
                             <tr>
                                 <td class="two-col-left">Summary</td>
-                                <td class="two-col-right wrap-strings">{{ advisory.summary }}
+                                <td class="two-col-right wrap-strings">{{ advisory.summary|linebreaksbr }}
                                 </td>
                             </tr>
                             {% if severity_score_range %}

@@ -8,6 +8,8 @@
 #
 
 
+import re
+
 from aboutcode.pipeline import humanize_time
 from django import template
 
@@ -52,3 +54,13 @@ def querystring(request, **kwargs):
         query[key] = value
 
     return query.urlencode()
+
+
+@register.filter
+def normalize_links(value):
+    """Normalize Markdown URLs."""
+    if not value:
+        return ""
+
+    markdown_links = re.compile(r"\[([^\]]+)\]\((https?://[^\s)]+)\s*\)")
+    return markdown_links.sub(r"\1 \2", value)
