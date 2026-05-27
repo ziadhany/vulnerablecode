@@ -1107,7 +1107,9 @@ class AdvisoryPackageCurationView(DetailView):
         context = super().get_context_data(**kwargs)
         todo = self.object
 
-        context["advisory_summaries"] = {adv.avid: adv.summary for adv in todo.advisories.all()}
+        context["advisory_summaries"] = {
+            adv.avid: adv.summary for adv in todo.advisories.all() if adv.summary.strip()
+        }
         context["vulnerability_id"] = todo.alias
         context["curation_items"] = json.dumps(todo.issue_detail["curation_items"])
         return context
