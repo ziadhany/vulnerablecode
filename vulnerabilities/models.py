@@ -2572,8 +2572,9 @@ class AdvisoryToDoV2(models.Model):
         help_text="Select the issue that needs to be addressed from the available options.",
     )
 
-    issue_detail = models.TextField(
+    issue_detail = models.JSONField(
         blank=True,
+        default=dict,
         help_text="Additional details about the issue.",
     )
 
@@ -3167,6 +3168,8 @@ class AdvisoryV2(models.Model):
     status = models.IntegerField(
         choices=AdvisoryStatusType.choices, default=AdvisoryStatusType.PUBLISHED
     )
+
+    # Note: Fields and relations below are not part of original upstream advisory.
 
     exploitability = models.DecimalField(
         null=True,
