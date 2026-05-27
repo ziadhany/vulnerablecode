@@ -35,6 +35,7 @@ class VulnrichImporterPipeline(VulnerableCodeBaseImporterPipelineV2):
     repo_url = "git+https://github.com/cisagov/vulnrichment.git"
 
     precedence = 100
+    exclude_from_package_todo = True
 
     @classmethod
     def steps(cls):

@@ -32,6 +32,7 @@ from vulnerabilities.api_v3 import PackageV3ViewSet
 from vulnerabilities.views import AdminLoginView
 from vulnerabilities.views import AdvisoryDetails
 from vulnerabilities.views import AdvisoryPackagesDetails
+from vulnerabilities.views import AdvisoryToDoListView
 from vulnerabilities.views import AffectedByAdvisoriesListView
 from vulnerabilities.views import ApiUserCreateView
 from vulnerabilities.views import FixingAdvisoriesListView
@@ -98,6 +99,11 @@ urlpatterns = [
         "pipelines/dashboard/",
         PipelineScheduleListView.as_view(),
         name="dashboard",
+    ),
+    path(
+        "advisories/todos/",
+        AdvisoryToDoListView.as_view(),
+        name="todo-list",
     ),
     path(
         "pipelines/<str:pipeline_id>/runs/",

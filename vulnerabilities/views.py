@@ -6,6 +6,7 @@
 # See https://github.com/aboutcode-org/vulnerablecode for support or download.
 # See https://aboutcode.org for more information about nexB OSS projects.
 #
+
 import logging
 from collections import defaultdict
 from typing import List
@@ -36,11 +37,14 @@ from django.views.generic.list import ListView
 from vulnerabilities import models
 from vulnerabilities.forms import AdminLoginForm
 from vulnerabilities.forms import AdvisorySearchForm
+from vulnerabilities.forms import AdvisoryToDoForm
 from vulnerabilities.forms import ApiUserCreationForm
 from vulnerabilities.forms import PackageSearchForm
 from vulnerabilities.forms import PipelineSchedulePackageForm
 from vulnerabilities.forms import VulnerabilitySearchForm
+from vulnerabilities.models import ISSUE_TYPE_CHOICES
 from vulnerabilities.models import AdvisorySetMember
+from vulnerabilities.models import AdvisoryToDoV2
 from vulnerabilities.models import AdvisoryV2
 from vulnerabilities.models import Group
 from vulnerabilities.models import GroupedAdvisory
@@ -1039,4 +1043,46 @@ class AdminLoginView(LoginView):
         context = super().get_context_data(**kwargs)
         context["site_title"] = "VulnerableCode site admin"
         context["site_header"] = "VulnerableCode Administration"
+        return context
+
+
+class AdvisoryToDoListView(ListView, FormMixin):
+    model = AdvisoryToDoV2
+    context_object_name = "todo_list"
+    template_name = "advisory_todos.html"
+    paginate_by = 20
+    form_class = AdvisoryToDoForm
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs["data"] = self.request.GET
+        return kwargs
+
+    def get_queryset(self):
+        form = self.form_class(self.request.GET)
+        resolved = self.request.GET.get("resolved")
+        issue_type = self.request.GET.get("issue_type")
+
+        qs = (
+            super()
+            .get_queryset()
+            .filter(is_todo_stale=False)
+            .order_by("-advisories_count", "-oldest_advisory_date")
+        )
+        if resolved in ["True", "False"]:
+            qs = qs.filter(is_resolved=(resolved == "True"))
+
+        if issue_type:
+            qs = qs.filter(issue_type=issue_type)
+
+        qs.prefetch_related("advisories__aliases")
+        if form.is_valid() and (search := form.cleaned_data.get("search")):
+            return qs.filter(advisories__aliases__alias__icontains=search)
+
+        return qs
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["issue_choices"] = ISSUE_TYPE_CHOICES
+
         return context
