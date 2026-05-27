@@ -7,6 +7,7 @@
 # See https://aboutcode.org for more information about nexB OSS projects.
 #
 
+import json
 import logging
 from collections import defaultdict
 from typing import List
@@ -1085,4 +1086,28 @@ class AdvisoryToDoListView(ListView, FormMixin):
         context = super().get_context_data(**kwargs)
         context["issue_choices"] = ISSUE_TYPE_CHOICES
 
+        return context
+
+
+class AdvisoryPackageCurationView(DetailView):
+    model = AdvisoryToDoV2
+    template_name = "package_curation.html"
+    slug_url_kwarg = "todo_id"
+    slug_field = "todo_id"
+
+    def get_queryset(self):
+        package_curation_issue_types = [
+            "CONFLICTING_FIXED_BY_PACKAGES",
+            "CONFLICTING_AFFECTED_PACKAGES",
+            "CONFLICTING_AFFECTED_AND_FIXED_BY_PACKAGES",
+        ]
+        return super().get_queryset().filter(issue_type__in=package_curation_issue_types)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        todo = self.object
+
+        context["advisory_summaries"] = {adv.avid: adv.summary for adv in todo.advisories.all()}
+        context["vulnerability_id"] = todo.alias
+        context["curation_items"] = json.dumps(todo.issue_detail["curation_items"])
         return context
