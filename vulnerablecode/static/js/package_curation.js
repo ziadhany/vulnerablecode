@@ -20,7 +20,7 @@ const app = {
 
         const total = curationItems.length;
         const progPercentage = ((this.currentIndex + 1) / total) * 100;
-        document.getElementById('main-progress').value = progPercentage;
+        document.getElementById('progress').value = progPercentage;
         document.getElementById('progress-text').innerText = `${this.currentIndex + 1} / ${total}`;
         document.getElementById('current-purl').innerText = item.purl;
         document.getElementById('conflict-reason').innerText = item.conflict_reason;
@@ -35,109 +35,6 @@ const app = {
         this.renderHeader(item);
         this.renderBody(item, versions);
         this.updateNavButtons();
-    },
-
-    renderHeader(item) {
-        const header = document.getElementById('table-header');
-        header.innerHTML = `
-            <th class="has-text-weight-bold pt-4">Version</th>
-            <th style="width: 140px;" class="has-text-centered">
-                <div>
-                    <div>
-                        <div class="has-text-weight-bold">Curation</div>
-                    </div>
-                    <button class="button is-small is-outlined is-info mt-auto" onclick="app.resetCurrentCuration()">Reset</button>
-                </div>
-            </th>`;
-        item.advisories.forEach((adv, idx) => {
-            const th = document.createElement('th');
-            th.className = "has-text-centered";
-            const targetUrl = baseAdvisoryUrl.replace('0', adv.advisory_uid);
-            th.innerHTML = `
-                <div>
-                    <div class="mb-3 advisory-wrapper">
-                        <a href="${targetUrl}" target="_blank" rel="noopener noreferrer" class="has-text-link has-text-weight-bold advisory-link">
-                            <span>${adv.advisory_uid}</span>
-                            <span class="icon is-small" style="font-size: 0.75rem;"><i class="fa fa-external-link"></i></span>
-                        </a>
-                    </div>
-                    <button class="button is-small is-info mt-auto" onclick="app.pickAdvisory(${idx})">Pick This</button>
-                </div>
-            `;
-            header.appendChild(th);
-        });
-    },
-
-    renderBody(item, versions) {
-        const body = document.getElementById('curation-body');
-        body.innerHTML = '';
-        const totalColumns = item.advisories.length + 2;
-        const rangeToggleRow = document.createElement('tr');
-        rangeToggleRow.innerHTML = `
-            <td colspan="${totalColumns}" class="range-row-marker" onclick="app.toggleRanges()">
-                <span class="icon is-small"><i class="fa ${this.showRanges ? 'fa-chevron-up' : 'fa-chevron-down'}"></i></span>
-                ${this.showRanges ? 'Hide' : 'Show'} Version Ranges
-            </td>`;
-        body.appendChild(rangeToggleRow);
-        if (this.showRanges) {
-            const rangeDataRow = document.createElement('tr');
-            let rowHtml = `<td></td><td></td>`;
-            item.advisories.forEach(adv => {
-                const rangeHtml = adv.vers_ranges.map(r => {
-                    let htmlLines = [];
-                    if (r.affected_vers && r.affected_vers.trim() !== "") {
-                        htmlLines.push(`<div><span class="has-text-weight-semibold">Affected:</span> ${r.affected_vers}</div>`);
-                    }
-                    if (r.fixing_vers && r.fixing_vers.trim() !== "") {
-                        htmlLines.push(`<div><span class="has-text-weight-semibold">Fixing:</span> ${r.fixing_vers}</div>`);
-                    }
-                    return htmlLines.length > 0 ? htmlLines.join('') : '<div>No range specified</div>';
-                }).join('<hr class="my-1" style="background-color: #dbdbdb; height: 1px;">');
-                rowHtml += `<td class="range-data-cell">${rangeHtml}</td>`;
-            });
-            rangeDataRow.innerHTML = rowHtml;
-            body.appendChild(rangeDataRow);
-        }
-        const foldable = this.getFoldableRanges(item, versions);
-        for (let i = 0; i < versions.length; i++) {
-            const range = foldable.find(r => i >= r.start && i <= r.end);
-            if (range) {
-                const foldKey = `${this.currentIndex}-${range.start}`;
-                let isExpanded = this.expandedFolds.has(foldKey);
-                if (!this.foldAgreementBlocks) {
-                    isExpanded = !this.expandedFolds.has(`${this.currentIndex}-${range.start}-collapsed`);
-                }
-                if (i === range.start) {
-                    const marker = document.createElement('tr');
-                    marker.innerHTML = `<td colspan="${item.advisories.length + 2}" class="folded-row-marker ${isExpanded ? 'is-expanded' : ''}" onclick="app.toggleFold(${range.start})">
-                        <span class="icon is-small"><i class="fa fa-chevron-down"></i></span>
-                        ${isExpanded ? 'Hide' : 'Show'} Consensus Range (${range.end - range.start + 1} versions)
-                    </td>`;
-                    body.appendChild(marker);
-                }
-                if (!isExpanded) {
-                    if (i === range.end) continue;
-                    i = range.end;
-                    continue;
-                }
-            }
-            body.appendChild(this.createRow(versions[i], item));
-        }
-    },
-
-    resetCurrentCuration() {
-        const item = curationItems[this.currentIndex];
-        const versions = item.all_versions || item.all_version;
-        versions.forEach(v => {
-            if (item.partial_curation.affected.includes(v)) {
-                this.userStates[this.currentIndex][v] = 'affected';
-            } else if (item.partial_curation.fixing.includes(v)) {
-                this.userStates[this.currentIndex][v] = 'fixed';
-            } else {
-                this.userStates[this.currentIndex][v] = '?';
-            }
-        });
-        this.renderBody(item, versions);
     },
 
     renderHeader(item) {
@@ -168,7 +65,7 @@ const app = {
                 <div class="mb-3 advisory-wrapper">
                     <a href="${primaryUrl}" target="_blank" rel="noopener noreferrer" class="has-text-link has-text-weight-bold advisory-link">
                         <span>${advGroup.primary.advisory_uid}</span>
-                        <span class="icon is-small" style="font-size: 0.75rem;"><i class="fa fa-external-link"></i></span>
+                        <span class="icon is-small"><i class="fa fa-external-link"></i></span>
                     </a>
                 </div>
             `;
@@ -207,7 +104,7 @@ const app = {
                                 <span class="tag is-light is-size-7 mb-1">Similar</span>
                                 <a href="${secUrl}" target="_blank" rel="noopener noreferrer" class="has-text-grey-dark has-text-weight-bold advisory-link">
                                     <span>${sec.advisory_uid}</span>
-                                    <span class="icon is-small" style="font-size: 0.75rem;"><i class="fa fa-external-link"></i></span>
+                                    <span class="icon is-small" ><i class="fa fa-external-link"></i></span>
                                 </a>
                             </div>
                             <button class="button is-small is-info is-light mt-auto" onclick="app.pickAdvisory(${groupIdx}, 'secondary', ${secIdx})">Pick This</button>
@@ -299,10 +196,25 @@ const app = {
         }
     },
 
+    resetCurrentCuration() {
+        const item = curationItems[this.currentIndex];
+        const versions = item.all_versions || item.all_version;
+        versions.forEach(v => {
+            if (item.partial_curation.affected.includes(v)) {
+                this.userStates[this.currentIndex][v] = 'affected';
+            } else if (item.partial_curation.fixing.includes(v)) {
+                this.userStates[this.currentIndex][v] = 'fixed';
+            } else {
+                this.userStates[this.currentIndex][v] = '?';
+            }
+        });
+        this.renderBody(item, versions);
+    },
+
     createRow(v, item) {
         const tr = document.createElement('tr');
         const state = this.userStates[this.currentIndex][v];
-        tr.innerHTML = `<td class="has-text-weight-bold ">${v}</td>`;
+        tr.innerHTML = `<td class="has-text-weight-bold">${v}</td>`;
         const userTd = document.createElement('td');
         userTd.className = `curation-cell state-${state} `;
         userTd.innerText = state.toUpperCase();
@@ -315,7 +227,7 @@ const app = {
 
             const primaryState = advGroup.affected.includes(v) ? 'affected' : (advGroup.fixing.includes(v) ? 'fixed' : 'unaffected');
             const td = document.createElement('td');
-            td.className = `advisory-cell state-${primaryState}`;
+            td.className = `state-${primaryState} has-text-centered`;
             td.innerText = primaryState.toUpperCase();
             tr.appendChild(td);
 
@@ -326,7 +238,7 @@ const app = {
                     
                     const secState = secAffected.includes(v) ? 'affected' : (secFixing.includes(v) ? 'fixed' : 'unaffected'); 
                     const secTd = document.createElement('td');
-                    secTd.className = `advisory-cell state-${secState}`;
+                    secTd.className = `state-${secState} has-text-centered`;
                     secTd.style.borderLeft = "1px dashed #dbdbdb";
                     secTd.innerText = secState.toUpperCase();
                     tr.appendChild(secTd);

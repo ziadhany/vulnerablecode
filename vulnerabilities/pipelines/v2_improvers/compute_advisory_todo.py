@@ -518,7 +518,7 @@ def get_disagreement_message(fixed_disagreement, affected_disagreement):
 
         messages.append(f"Advisories do not agree whether {noun} {fixed} {verb} the fix.")
 
-    return " ".join(messages)
+    return "\n".join(messages)
 
 
 def get_grouped_curation_advisories_for_dashboard_ui(purl, adv_map, conflict_detail, advisories):
