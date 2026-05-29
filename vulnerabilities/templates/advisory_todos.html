@@ -32,7 +32,7 @@ Advisory To-Dos
     <div class="column">
     </div>
 
-    <div class="column is-four-fifths">
+    <div class="column is-11">
         <div class="content is-normal">
             <h1>Advisory To-Dos</h1>
             <hr />
@@ -100,9 +100,9 @@ Advisory To-Dos
 
                             <div class="column has-text-left" style="flex: 0 0 10%;"></div>
 
-                            <div class="column" style="flex: 0 0 40%;">
-                                <div class="select is-half">
-                                    <select name="issue_type" onchange="this.form.submit()">
+                            <div class="column">
+                                <div class="select is-fullwidth">
+                                    <select name="issue_type" onchange="this.form.submit()" >
                                         {% for val, label in form.fields.issue_type.choices %}
                                             <option value="{{ val }}"
                                                 {% if form.issue_type.value == val %}selected{% endif %}>
