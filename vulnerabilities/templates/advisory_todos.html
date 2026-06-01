@@ -32,7 +32,7 @@ Advisory To-Dos
     <div class="column">
     </div>
 
-    <div class="column is-four-fifths">
+    <div class="column is-11">
         <div class="content is-normal">
             <h1>Advisory To-Dos</h1>
             <hr />
@@ -100,9 +100,9 @@ Advisory To-Dos
 
                             <div class="column has-text-left" style="flex: 0 0 10%;"></div>
 
-                            <div class="column" style="flex: 0 0 40%;">
-                                <div class="select is-half">
-                                    <select name="issue_type" onchange="this.form.submit()">
+                            <div class="column">
+                                <div class="select is-fullwidth">
+                                    <select name="issue_type" onchange="this.form.submit()" >
                                         {% for val, label in form.fields.issue_type.choices %}
                                             <option value="{{ val }}"
                                                 {% if form.issue_type.value == val %}selected{% endif %}>
@@ -122,6 +122,10 @@ Advisory To-Dos
             {% for todo in todo_list %}
             <tr>
                 <td colspan="4">
+                    {% with supported_curation="CONFLICTING_FIXED_BY_PACKAGES CONFLICTING_AFFECTED_PACKAGES CONFLICTING_AFFECTED_AND_FIXED_BY_PACKAGES" %}
+                    {% if todo.issue_type in supported_curation.split %}
+                        <a href="{% url 'todo-detail' todo_id=todo.todo_id %}" class="has-text-info">
+                    {% endif %}
                             <div class="columns px-1 is-vcentered">
                                 <div class="column has-text-left" style="flex: 0 0 20%;">
                                     {{ todo.alias }}
@@ -139,6 +143,10 @@ Advisory To-Dos
                                     {{ todo.get_issue_type_display }}
                                 </div>
                             </div>
+                    {% if todo.issue_type in supported_curation.split %}
+                        </a>
+                    {% endif %}
+                    {% endwith %}
                 </td>
             </tr>
             {% empty %}

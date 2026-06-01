@@ -254,8 +254,8 @@ class TestComputeToDo(TestCase):
         self.assertEqual(1, AdvisoryToDoV2.objects.count())
         self.assertEqual("CONFLICTING_AFFECTED_AND_FIXED_BY_PACKAGES", todo.issue_type)
         self.assertIn(
-            '"conflict_checksum": "87d9e2627a8461fc5c068335d822af4aa0a40a8f265a92895c51d275d97ab0d6",',
-            todo.issue_detail,
+            "87d9e2627a8461fc5c068335d822af4aa0a40a8f265a92895c51d275d97ab0d6",
+            todo.issue_detail["conflict_checksum"],
         )
         self.assertEqual(2, todo.advisories.count())
         self.assertEqual(todo, adv.advisory_todos.first())
@@ -287,7 +287,7 @@ class TestComputeToDo(TestCase):
         expected_partial_curation_advisory = {
             "advisory_id": "PLACEHOLDER_PARTIAL_CURATION_AVID",
             "aliases": ["CVE-000-000"],
-            "summary": "('test5/test_id_5', 'test6/test_id_6'): Test summary",
+            "summary": "[test5/test_id_5, test6/test_id_6]: Test summary",
             "affected_packages": [
                 {
                     "package": {
@@ -377,12 +377,10 @@ class TestComputeToDo(TestCase):
         pipeline.execute()
 
         todo = AdvisoryToDoV2.objects.first()
-        issue_details = json.loads(todo.issue_detail)
+        issue_details = todo.issue_detail
         result_partial_curation = issue_details["partial_curation_advisory"]
         self.assertEqual(1, AdvisoryToDoV2.objects.count())
         self.assertEqual("CONFLICTING_FIXED_BY_PACKAGES", todo.issue_type)
-        print(result_partial_curation)
-        # breakpoint()
         self.assertDictEqual(expected_partial_curation_advisory, result_partial_curation)
 
     def test_todo_conflict_details_partial_curation_unpaired_purl_and_conflicting_affected_and_fixed(
@@ -391,7 +389,7 @@ class TestComputeToDo(TestCase):
         expected_partial_curation_advisory = {
             "advisory_id": "PLACEHOLDER_PARTIAL_CURATION_AVID",
             "aliases": ["CVE-000-000"],
-            "summary": "('test1/test_id', 'test5/test_id_5'): Test summary",
+            "summary": "[test1/test_id, test5/test_id_5]: Test summary",
             "affected_packages": [
                 {
                     "package": {
@@ -439,19 +437,17 @@ class TestComputeToDo(TestCase):
         pipeline.execute()
 
         todo = AdvisoryToDoV2.objects.first()
-        issue_details = json.loads(todo.issue_detail)
+        issue_details = todo.issue_detail
         result_partial_curation = issue_details["partial_curation_advisory"]
         self.assertEqual(1, AdvisoryToDoV2.objects.count())
         self.assertEqual("CONFLICTING_AFFECTED_AND_FIXED_BY_PACKAGES", todo.issue_type)
-        print(result_partial_curation)
-        # breakpoint()
         self.assertDictEqual(expected_partial_curation_advisory, result_partial_curation)
 
     def test_todo_conflict_details_partial_curation_unpaired_purl_and_conflicting_fixed(self):
         expected_partial_curation_advisory = {
             "advisory_id": "PLACEHOLDER_PARTIAL_CURATION_AVID",
             "aliases": ["CVE-000-000"],
-            "summary": "('test1/test_id', 'test7/test_id_5'): Test summary",
+            "summary": "[test1/test_id, test7/test_id_5]: Test summary",
             "affected_packages": [
                 {
                     "package": {
@@ -513,19 +509,17 @@ class TestComputeToDo(TestCase):
         pipeline.execute()
 
         todo = AdvisoryToDoV2.objects.first()
-        issue_details = json.loads(todo.issue_detail)
+        issue_details = todo.issue_detail
         result_partial_curation = issue_details["partial_curation_advisory"]
         self.assertEqual(1, AdvisoryToDoV2.objects.count())
         self.assertEqual("CONFLICTING_FIXED_BY_PACKAGES", todo.issue_type)
-        print(result_partial_curation)
-        # breakpoint()
         self.assertDictEqual(expected_partial_curation_advisory, result_partial_curation)
 
     def test_todo_conflict_details_partial_curation_unpaired_purl_and_conflicting_affected(self):
         expected_partial_curation_advisory = {
             "advisory_id": "PLACEHOLDER_PARTIAL_CURATION_AVID",
             "aliases": ["CVE-000-000"],
-            "summary": "('test1/test_id', 'test8/test_id_5'): Test summary",
+            "summary": "[test1/test_id, test8/test_id_5]: Test summary",
             "affected_packages": [
                 {
                     "package": {
@@ -587,10 +581,8 @@ class TestComputeToDo(TestCase):
         pipeline.execute()
 
         todo = AdvisoryToDoV2.objects.first()
-        issue_details = json.loads(todo.issue_detail)
+        issue_details = todo.issue_detail
         result_partial_curation = issue_details["partial_curation_advisory"]
         self.assertEqual(1, AdvisoryToDoV2.objects.count())
         self.assertEqual("CONFLICTING_AFFECTED_PACKAGES", todo.issue_type)
-        print(result_partial_curation)
-        # breakpoint()
         self.assertDictEqual(expected_partial_curation_advisory, result_partial_curation)
