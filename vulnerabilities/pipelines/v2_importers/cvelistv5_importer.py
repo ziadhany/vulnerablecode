@@ -14,8 +14,8 @@ from typing import Iterable
 from fetchcode.vcs import fetch_via_vcs
 
 from vulnerabilities.importer import AdvisoryData
-from vulnerabilities.importers.cve_schema import parse_cve_v5_advisory
 from vulnerabilities.pipelines import VulnerableCodeBaseImporterPipelineV2
+from vulnerabilities.pipelines.v2_importers.cve_schema import parse_cve_advisory
 from vulnerabilities.utils import get_advisory_url
 
 logger = logging.getLogger(__name__)
@@ -60,7 +60,7 @@ class CVEListV5ImporterPipeline(VulnerableCodeBaseImporterPipelineV2):
 
             with open(file) as f:
                 raw_data = json.load(f)
-            yield parse_cve_v5_advisory(raw_data, advisory_url)
+            yield parse_cve_advisory(raw_data, advisory_url)
 
     def clean_downloads(self):
         if self.vcs_response:

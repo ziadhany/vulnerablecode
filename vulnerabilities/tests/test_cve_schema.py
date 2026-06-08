@@ -11,7 +11,7 @@ import json
 import os
 from unittest import TestCase
 
-from vulnerabilities.importers.cve_schema import parse_cve_v5_advisory
+from vulnerabilities.pipelines.v2_importers.cve_schema import parse_cve_advisory
 from vulnerabilities.tests import util_tests
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -23,7 +23,7 @@ class TestCVESchemaV5(TestCase):
         with open(os.path.join(TEST_DATA, "vulnrichment-data1.json")) as f:
             mock_response = json.load(f)
         expected_file = os.path.join(TEST_DATA, "vulnrichment-data1-expected.json")
-        imported_data = parse_cve_v5_advisory(mock_response, advisory_url="https://test.com")
+        imported_data = parse_cve_advisory(mock_response, advisory_url="https://test.com")
         result = imported_data.to_dict()
         util_tests.check_results_against_json(result, expected_file)
 
@@ -31,7 +31,7 @@ class TestCVESchemaV5(TestCase):
         with open(os.path.join(TEST_DATA, "vulnrichment-data2.json")) as f:
             mock_response = json.load(f)
         expected_file = os.path.join(TEST_DATA, "vulnrichment-data2-expected.json")
-        imported_data = parse_cve_v5_advisory(mock_response, advisory_url="https://test.com")
+        imported_data = parse_cve_advisory(mock_response, advisory_url="https://test.com")
         result = imported_data.to_dict()
         util_tests.check_results_against_json(result, expected_file)
 
@@ -39,7 +39,7 @@ class TestCVESchemaV5(TestCase):
         with open(os.path.join(TEST_DATA, "vulnrichment-data3.json")) as f:
             mock_response = json.load(f)
         expected_file = os.path.join(TEST_DATA, "vulnrichment-data3-expected.json")
-        imported_data = parse_cve_v5_advisory(mock_response, advisory_url="https://test.com")
+        imported_data = parse_cve_advisory(mock_response, advisory_url="https://test.com")
         result = imported_data.to_dict()
         util_tests.check_results_against_json(result, expected_file)
 
@@ -47,7 +47,7 @@ class TestCVESchemaV5(TestCase):
         with open(os.path.join(TEST_DATA, "cvelistv5-data1.json")) as f:
             mock_response = json.load(f)
         expected_file = os.path.join(TEST_DATA, "cvelistv5-data1-expected.json")
-        imported_data = parse_cve_v5_advisory(mock_response, advisory_url="https://test.com")
+        imported_data = parse_cve_advisory(mock_response, advisory_url="https://test.com")
         result = imported_data.to_dict()
         util_tests.check_results_against_json(result, expected_file)
 
@@ -55,7 +55,7 @@ class TestCVESchemaV5(TestCase):
         with open(os.path.join(TEST_DATA, "cvelistv5-data2.json")) as f:
             mock_response = json.load(f)
         expected_file = os.path.join(TEST_DATA, "cvelistv5-data2-expected.json")
-        imported_data = parse_cve_v5_advisory(mock_response, advisory_url="https://test.com")
+        imported_data = parse_cve_advisory(mock_response, advisory_url="https://test.com")
         result = imported_data.to_dict()
         util_tests.check_results_against_json(result, expected_file)
 
@@ -63,6 +63,6 @@ class TestCVESchemaV5(TestCase):
         with open(os.path.join(TEST_DATA, "cvelistv5-data3.json")) as f:
             mock_response = json.load(f)
         expected_file = os.path.join(TEST_DATA, "cvelistv5-data3-expected.json")
-        imported_data = parse_cve_v5_advisory(mock_response, advisory_url="https://test.com")
+        imported_data = parse_cve_advisory(mock_response, advisory_url="https://test.com")
         result = imported_data.to_dict()
         util_tests.check_results_against_json(result, expected_file)

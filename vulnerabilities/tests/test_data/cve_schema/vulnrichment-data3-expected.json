@@ -3,7 +3,7 @@
   "aliases": [],
   "summary": "An issue was discovered in GitLab CE/EE affecting all versions starting from 16.9 prior to 16.11.5, starting from 17.0 prior to 17.0.3, and starting from 17.1 prior to 17.1.1, where a stored XSS vulnerability could be imported from a project with malicious commit notes.",
   "affected_packages": [],
-  "references_v2": [
+  "references": [
     {
       "reference_id": "461773",
       "reference_type": "bug",
@@ -15,10 +15,11 @@
       "url": "https://hackerone.com/reports/2500163"
     }
   ],
+  "patches": [],
   "severities": [
     {
       "system": "cvssv3.1",
-      "value": 8.7,
+      "value": "8.7",
       "scoring_elements": "CVSS:3.1/AV:N/AC:L/PR:L/UI:R/S:C/C:H/I:H/A:N"
     },
     {

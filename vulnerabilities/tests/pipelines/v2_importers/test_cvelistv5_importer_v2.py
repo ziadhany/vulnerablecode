@@ -13,10 +13,12 @@ from unittest.mock import patch
 
 import pytest
 
-from vulnerabilities.importer import AdvisoryData
+from vulnerabilities.importer import AdvisoryDataV2
+from vulnerabilities.importer import ReferenceV2
 from vulnerabilities.importer import VulnerabilitySeverity
-from vulnerabilities.importers.cve_schema import parse_cve_v5_advisory
+from vulnerabilities.pipelines.v2_importers.cve_schema import parse_cve_advisory
 from vulnerabilities.pipelines.v2_importers.cvelistv5_importer import CVEListV5ImporterPipeline
+from vulnerabilities.severity_systems import Cvssv4ScoringSystem
 
 
 @pytest.fixture
@@ -98,17 +100,22 @@ def test_collect_advisories(mock_pathlib, mock_vcs_response, mock_fetch_via_vcs,
     with patch(
         "vulnerabilities.pipelines.v2_importers.cvelistv5_importer.CVEListV5ImporterPipeline"
     ) as mock_parse:
-        mock_parse.return_value = AdvisoryData(
+        mock_parse.return_value = AdvisoryDataV2(
             advisory_id="CVE-2021-1234",
             summary="Sample PyPI vulnerability",
-            references_v2=[{"url": "https://example.com"}],
+            references=[ReferenceV2(url="https://example.com")],
             affected_packages=[],
             weaknesses=[],
             url="https://github.com/CVEProject/cvelistV5/blob/cves/2021/1xxx/CVE-2021-1234.json",
             severities=[
                 VulnerabilitySeverity(
-                    system="cvssv4",
-                    value=7.5,
+                    system=Cvssv4ScoringSystem(
+                        identifier="cvssv4",
+                        name="CVSSv4 Base Score",
+                        url="https://www.first.org/cvss/v4-0/",
+                        notes="CVSSv4 base score and vector",
+                    ),
+                    value="7.5",
                     scoring_elements="AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:H",
                 )
             ],
@@ -118,7 +125,6 @@ def test_collect_advisories(mock_pathlib, mock_vcs_response, mock_fetch_via_vcs,
         pipeline.clone()
         advisories = list(pipeline.collect_advisories())
 
-        # Ensure that advisories are parsed correctly
         assert len(advisories) == 1
         advisory = advisories[0]
         assert advisory.advisory_id == "CVE-2021-1234"
@@ -176,13 +182,13 @@ def test_parse_cve_advisory(mock_pathlib, mock_vcs_response, mock_fetch_via_vcs)
 
     pipeline = CVEListV5ImporterPipeline()
     pipeline.clone()
-    advisory = parse_cve_v5_advisory(raw_data, advisory_url)
+    advisory = parse_cve_advisory(raw_data, advisory_url)
 
     assert advisory.advisory_id == "CVE-2021-1234"
     assert advisory.summary == "Sample PyPI vulnerability"
     assert advisory.url == advisory_url
     assert len(advisory.severities) == 1
-    assert advisory.severities[0].value == 7.5
+    assert advisory.severities[0].value == "7.5"
 
 
 def test_collect_advisories_with_invalid_json(

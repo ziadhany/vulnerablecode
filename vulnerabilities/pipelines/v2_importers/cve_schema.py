@@ -11,7 +11,7 @@ import re
 
 import dateparser
 
-from vulnerabilities.importer import AdvisoryData
+from vulnerabilities.importer import AdvisoryDataV2
 from vulnerabilities.importer import ReferenceV2
 from vulnerabilities.importer import VulnerabilitySeverity
 from vulnerabilities.models import VulnerabilityReference
@@ -21,9 +21,10 @@ from vulnerabilities.utils import get_reference_id
 from vulnerabilities.utils import ssvc_calculator
 
 
-def parse_cve_v5_advisory(raw_data, advisory_url):
+def parse_cve_advisory(raw_data, advisory_url):
     cve_metadata = raw_data.get("cveMetadata", {})
     cve_id = cve_metadata.get("cveId")
+    state = cve_metadata.get("state")
 
     date_published = cve_metadata.get("datePublished")
     if date_published:
@@ -55,7 +56,7 @@ def parse_cve_v5_advisory(raw_data, advisory_url):
         adp_metrics for data in adp_data for adp_metrics in data.get("metrics", [])
     ]
 
-    cve_scoring_system = {
+    vulnrichment_scoring_system = {
         "cvssV4_0": SCORING_SYSTEMS["cvssv4"],
         "cvssV3_1": SCORING_SYSTEMS["cvssv3.1"],
         "cvssV3_0": SCORING_SYSTEMS["cvssv3"],
@@ -67,7 +68,7 @@ def parse_cve_v5_advisory(raw_data, advisory_url):
 
     for metric in metrics:
         for metric_type, metric_value in metric.items():
-            if metric_type not in cve_scoring_system:
+            if metric_type not in vulnrichment_scoring_system:
                 continue
 
             if metric_type == "other":
@@ -75,7 +76,7 @@ def parse_cve_v5_advisory(raw_data, advisory_url):
                 if other_types == "ssvc":
                     content = metric_value.get("content", {})
                     vector_string, decision = ssvc_calculator(content)
-                    scoring_system = cve_scoring_system[metric_type][other_types]
+                    scoring_system = vulnrichment_scoring_system[metric_type][other_types]
                     severity = VulnerabilitySeverity(
                         system=scoring_system, value=decision, scoring_elements=vector_string
                     )
@@ -84,7 +85,7 @@ def parse_cve_v5_advisory(raw_data, advisory_url):
             else:
                 vector_string = metric_value.get("vectorString")
                 base_score = metric_value.get("baseScore")
-                scoring_system = cve_scoring_system[metric_type]
+                scoring_system = vulnrichment_scoring_system[metric_type]
                 severity = VulnerabilitySeverity(
                     system=scoring_system, value=base_score, scoring_elements=vector_string
                 )
@@ -149,11 +150,11 @@ def parse_cve_v5_advisory(raw_data, advisory_url):
                 if match:
                     weaknesses.add(int(match.group(1)))
 
-    return AdvisoryData(
+    return AdvisoryDataV2(
         advisory_id=cve_id,
         aliases=[],
         summary=summary,
-        references_v2=references,
+        references=references,
         date_published=date_published,
         weaknesses=sorted(weaknesses),
         url=advisory_url,
