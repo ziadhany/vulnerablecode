@@ -8,6 +8,7 @@
 #
 
 import hashlib
+from collections import defaultdict
 
 import pytest
 
@@ -18,12 +19,11 @@ from vulnerabilities.models import AdvisoryV2
 from vulnerabilities.models import Group
 from vulnerabilities.models import ImpactedPackage
 from vulnerabilities.models import PackageV2
+from vulnerabilities.pipes.group_advisories import delete_and_save_advisory_set
+from vulnerabilities.pipes.group_advisories import get_merged_identifier_groups
+from vulnerabilities.pipes.group_advisories import merge_advisories
 from vulnerabilities.utils import compute_advisory_content_hash
-from vulnerabilities.utils import delete_and_save_advisory_set
 from vulnerabilities.utils import get_advisories_from_groups
-from vulnerabilities.utils import get_merged_identifier_groups
-from vulnerabilities.utils import merge_advisories
-from vulnerabilities.utils import merge_and_save_grouped_advisories
 
 
 @pytest.mark.django_db
@@ -92,7 +92,11 @@ class TestAdvisoryMerge:
         adv1.aliases.add(alias)
         adv2.aliases.add(alias)
 
-        groups = get_merged_identifier_groups([adv1, adv2])
+        alias_map: dict[int, list] = defaultdict(list)
+        for adv in [adv1, adv2]:
+            alias_map[adv.id] = list(adv.aliases.all())
+
+        groups = get_merged_identifier_groups([adv1, adv2], alias_map=alias_map)
 
         assert len(groups) == 1
         identifiers, primary, secondary = groups[0]
@@ -113,7 +117,11 @@ class TestAdvisoryMerge:
         a2.aliases.add(alias_2)
         a3.aliases.add(alias_2)
 
-        groups = get_merged_identifier_groups([a1, a2, a3])
+        alias_map: dict[int, list] = defaultdict(list)
+        for adv in [a1, a2, a3]:
+            alias_map[adv.id] = list(adv.aliases.all())
+
+        groups = get_merged_identifier_groups([a1, a2, a3], alias_map=alias_map)
 
         assert len(groups) == 1
 
@@ -126,7 +134,11 @@ class TestAdvisoryMerge:
         a1.aliases.add(alias_1)
         a2.aliases.add(alias_1)
 
-        groups = get_merged_identifier_groups([a1, a2])
+        alias_map: dict[int, list] = defaultdict(list)
+        for adv in [a1, a2]:
+            alias_map[adv.id] = list(adv.aliases.all())
+
+        groups = get_merged_identifier_groups([a1, a2], alias_map=alias_map)
         _, primary, _ = groups[0]
 
         assert primary == a2
@@ -135,7 +147,11 @@ class TestAdvisoryMerge:
         adv = self.create_advisory("GHSA-ABC-123", ["1.0"])
         adv.aliases.create(alias="CVE-999")
 
-        groups = get_merged_identifier_groups([adv])
+        alias_map: dict[int, list] = defaultdict(list)
+        for adv in [adv]:
+            alias_map[adv.id] = list(adv.aliases.all())
+
+        groups = get_merged_identifier_groups([adv], alias_map=alias_map)
         result = get_advisories_from_groups(groups)
 
         assert result[0].identifier == "GHSA-ABC-123"
@@ -161,27 +177,6 @@ class TestAdvisoryMerge:
 
         assert any(m.is_primary for m in members)
         assert any(not m.is_primary for m in members)
-
-    def test_merge_and_save_integration(self):
-        package = PackageV2.objects.from_purl("pkg:pypi/sample@1.0.0")
-
-        adv1 = self.create_advisory("A1", ["1.0"], ["2.0"])
-        adv2 = self.create_advisory("A2", ["1.0"], ["2.0"])
-
-        alias = AdvisoryAlias.objects.create(alias="CVE-1")
-
-        adv1.aliases.add(alias)
-        adv2.aliases.add(alias)
-
-        result = merge_and_save_grouped_advisories(
-            package,
-            [adv1, adv2],
-            relation="test",
-        )
-
-        assert len(result) == 1
-        assert AdvisorySet.objects.count() == 1
-        assert AdvisorySetMember.objects.count() == 2
 
     def test_merge_advisories_separates_different_content(self):
         package = PackageV2.objects.from_purl("pkg:pypi/sample@1.0.0")

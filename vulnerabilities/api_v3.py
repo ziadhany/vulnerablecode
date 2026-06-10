@@ -8,13 +8,14 @@
 #
 
 from collections import defaultdict
-from typing import List
 from urllib.parse import urlencode
 
+from django.contrib.postgres.aggregates import ArrayAgg
 from django.db.models import Exists
 from django.db.models import Max
 from django.db.models import OuterRef
 from django.db.models import Prefetch
+from django.db.models import Q
 from django_filters import rest_framework as filters
 from drf_spectacular.utils import extend_schema
 from packageurl import PackageURL
@@ -23,6 +24,7 @@ from rest_framework import viewsets
 from rest_framework.reverse import reverse
 from rest_framework.throttling import AnonRateThrottle
 
+from vulnerabilities.models import SSVC
 from vulnerabilities.models import AdvisoryAlias
 from vulnerabilities.models import AdvisoryReference
 from vulnerabilities.models import AdvisorySet
@@ -30,24 +32,20 @@ from vulnerabilities.models import AdvisorySetMember
 from vulnerabilities.models import AdvisorySeverity
 from vulnerabilities.models import AdvisoryV2
 from vulnerabilities.models import AdvisoryWeakness
-from vulnerabilities.models import Group
-from vulnerabilities.models import GroupedAdvisory
 from vulnerabilities.models import ImpactedPackageAffecting
 from vulnerabilities.models import PackageV2
 from vulnerabilities.throttling import PermissionBasedUserRateThrottle
 from vulnerabilities.utils import TYPES_WITH_MULTIPLE_IMPORTERS
-from vulnerabilities.utils import get_advisories_from_groups
-from vulnerabilities.utils import merge_and_save_grouped_advisories
 
 
 class PackageQuerySerializer(serializers.Serializer):
     purls = serializers.ListField(
         child=serializers.CharField(),
-        required=False,
-        default=list,
+        required=True,
     )
     details = serializers.BooleanField(default=False)
     ignore_qualifiers_subpath = serializers.BooleanField(default=False)
+    max_advisories = serializers.IntegerField(default=100, min_value=1, max_value=10000)
 
     def validate(self, data):
         if not data["purls"]:
@@ -56,6 +54,14 @@ class PackageQuerySerializer(serializers.Serializer):
                     "``details`` and ``ignore_qualifiers_subpath`` must be false when purls is empty"
                 )
         return data
+
+    def to_internal_value(self, data):
+        unknown = set(data.keys()) - set(self.fields.keys())
+
+        if unknown:
+            raise serializers.ValidationError({field: ["Unknown field."] for field in unknown})
+
+        return super().to_internal_value(data)
 
 
 class AdvisoryQuerySerializer(serializers.Serializer):
@@ -156,9 +162,6 @@ class AdvisoryV3Serializer(serializers.ModelSerializer):
             "related_ssvc_trees",
         ]
 
-    def get_aliases(self, obj):
-        return [alias.alias for alias in obj.aliases.all()]
-
 
 class PackageV3Serializer(serializers.ModelSerializer):
     purl = serializers.CharField(source="package_url")
@@ -221,166 +224,17 @@ class PackageV3Serializer(serializers.ModelSerializer):
     def get_affected_by_vulnerabilities(self, package):
         """Return a dictionary with advisory as keys and their details, including fixed_by_packages."""
         advisories = self.context["advisory_map"].get(package.id, [])
-        impact_map = self.context["impact_map"].get(package.id, {})
-
-        if advisories:
-            result = []
-
-            for adv in advisories:
-                fixed = impact_map.get(adv["avid"])
-                adv.pop("avid", None)
-
-                result.append(
-                    {
-                        **adv,
-                        "fixed_by_packages": fixed,
-                    }
-                )
-
-            return result
-
-        advisories_qs = AdvisoryV2.objects.latest_affecting_advisories_for_purl(package.package_url)
-
-        advisories = []
-
-        if package.type not in TYPES_WITH_MULTIPLE_IMPORTERS:
-            advisories_ids = advisories_qs.only("id")
-
-            advisories_ids = list(advisories_ids[:101])
-            if len(advisories_ids) > 100:
-                return None
-
-            advisory_by_avid = {adv.avid: adv for adv in advisories_qs}
-            avids = advisory_by_avid.keys()
-
-            impacts = (
-                package.affected_in_impacts.filter(advisory__avid__in=avids)
-                .select_related("advisory")
-                .prefetch_related("fixed_by_packages")
-            )
-
-            impact_by_avid = {impact.advisory.avid: impact for impact in impacts}
-
-            result = []
-
-            for advisory in advisories_qs:
-                impact = impact_by_avid.get(advisory.avid)
-                if not impact:
-                    continue
-
-                result.append(
-                    {
-                        "advisory_id": advisory.advisory_id.split("/")[-1],
-                        "advisory_uid": advisory.avid,
-                        "aliases": [alias.alias for alias in advisory.aliases.all()],
-                        "summary": advisory.summary,
-                        "severity": advisory.weighted_severity,
-                        "exploitability": advisory.exploitability,
-                        "risk_score": advisory.risk_score,
-                        "fixed_by_packages": [pkg.purl for pkg in impact.fixed_by_packages.all()],
-                    }
-                )
-
-            return result
-
-        if not advisories:
-            if package.type in TYPES_WITH_MULTIPLE_IMPORTERS:
-                advisories_qs = advisories_qs.prefetch_related(
-                    "aliases",
-                    "impacted_packages__affecting_packages",
-                    "impacted_packages__fixed_by_packages",
-                )
-                advisories: List[GroupedAdvisory] = merge_and_save_grouped_advisories(
-                    package, advisories_qs, "affecting"
-                )
-                return self.return_advisories_data(package, advisories_qs, advisories)
+        if advisories == None:
+            # when there are more than advisories more than max_advisories for the request
+            return None
+        return advisories
 
     def get_fixing_vulnerabilities(self, package):
         advisories = self.context["fixing_advisory_map"].get(package.id, [])
-        if advisories:
-            return advisories
-
-        advisories_qs = AdvisoryV2.objects.latest_fixed_by_advisories_for_purl(package.package_url)
-
-        if not package.type in TYPES_WITH_MULTIPLE_IMPORTERS:
-            advisories_ids = advisories_qs.only("id")
-
-            advisories_ids = list(advisories_ids[:101])
-            if len(advisories_ids) > 100:
-                return None
-
-            results = []
-
-            for advisory in advisories_qs:
-                results.append(
-                    {
-                        "advisory_id": advisory.advisory_id.split("/")[-1],
-                        "advisory_uid": advisory.avid,
-                    }
-                )
-            return results
-
-        if package.type in TYPES_WITH_MULTIPLE_IMPORTERS:
-            advisories_qs = advisories_qs.prefetch_related(
-                "aliases",
-                "impacted_packages__affecting_packages",
-                "impacted_packages__fixed_by_packages",
-            )
-            if not advisories_qs.exists():
-                return []
-            advisories: List[GroupedAdvisory] = merge_and_save_grouped_advisories(
-                package, advisories_qs, "fixing"
-            )
-            return self.return_fixing_advisories_data(advisories)
-
-    def return_fixing_advisories_data(self, advisories):
-        result = []
-        for advisory in advisories:
-            assert isinstance(advisory, GroupedAdvisory)
-            result.append(
-                {
-                    "advisory_id": advisory.identifier,
-                    "advisory_uid": advisory.advisory.avid,
-                }
-            )
-
-        return result
-
-    def return_advisories_data(self, package, advisories_qs, advisories):
-        advisory_by_avid = {adv.avid: adv for adv in advisories_qs}
-        avids = advisory_by_avid.keys()
-
-        impacts = (
-            package.affected_in_impacts.filter(advisory__avid__in=avids)
-            .select_related("advisory")
-            .prefetch_related("fixed_by_packages")
-        )
-
-        impact_by_avid = {impact.advisory.avid: impact for impact in impacts}
-
-        result = []
-        for advisory in advisories:
-            assert isinstance(advisory, GroupedAdvisory)
-            impact = impact_by_avid.get(advisory.advisory.avid)
-            if not impact:
-                continue
-
-            result.append(
-                {
-                    "advisory_id": advisory.identifier,
-                    "advisory_uid": advisory.advisory.avid,
-                    "aliases": [alias.alias for alias in advisory.aliases],
-                    "weighted_severity": advisory.weighted_severity,
-                    "exploitability": advisory.exploitability,
-                    "risk_score": advisory.risk_score,
-                    "summary": advisory.advisory.summary,
-                    "fixed_by_packages": list(
-                        set([pkg.purl for pkg in impact.fixed_by_packages.all()])
-                    ),
-                }
-            )
-
-        return result
+        if advisories == None:
+            # when there are more than advisories more than max_advisories for the request
+            return None
+        return advisories
 
     def get_next_non_vulnerable_version(self, package):
         if next_non_vulnerable := package.next_non_vulnerable_version:
@@ -405,16 +259,10 @@ class PackageV3ViewSet(viewsets.GenericViewSet):
         purls = serializer.validated_data["purls"]
         details = serializer.validated_data["details"]
         ignore_qualifiers_subpath = serializer.validated_data["ignore_qualifiers_subpath"]
+        max_advisories = serializer.validated_data["max_advisories"]
 
         if not purls:
-            impacted = ImpactedPackageAffecting.objects.filter(package_id=OuterRef("id"))
-
-            query = (
-                PackageV2.objects.annotate(has_vuln=Exists(impacted))
-                .filter(has_vuln=True)
-                .values_list("package_url", flat=True)
-                .order_by("package_url")
-            )
+            query = PackageV2.objects.all_vulnerable_purls().order_by("package_url")
             page = self.paginate_queryset(query)
             return self.get_paginated_response(page)
 
@@ -434,41 +282,50 @@ class PackageV3ViewSet(viewsets.GenericViewSet):
             ]
 
         if not details:
+            affecting_exists = ImpactedPackageAffecting.objects.filter(
+                package_id=OuterRef("pk"),
+                impacted_package__advisory___all_impacts_unfurled_at__isnull=False,
+                impacted_package__advisory__is_latest=True,
+            )
+            # Return back vulnerable PURLs only
             if ignore_qualifiers_subpath:
                 query = (
-                    PackageV2.objects.filter(plain_package_url__in=plain_purls)
+                    PackageV2.objects.filter_plain_purls(plain_purls)
                     .values_list("plain_package_url", flat=True)
                     .order_by("plain_package_url")
                 )
             else:
                 query = (
-                    PackageV2.objects.filter(package_url__in=purls)
+                    PackageV2.objects.filter_purls(purls)
                     .order_by("package_url")
                     .values_list("package_url", flat=True)
                 )
+
+            query = query.annotate(
+                is_vulnerable=Exists(affecting_exists),
+            ).filter(is_vulnerable=True)
 
             page = self.paginate_queryset(query)
             return self.get_paginated_response(page)
 
         if ignore_qualifiers_subpath:
-            query = PackageV2.objects.filter(plain_package_url__in=plain_purls).order_by(
-                "plain_package_url"
-            )
+            query = PackageV2.objects.filter_plain_purls(plain_purls).order_by("plain_package_url")
         else:
-            query = PackageV2.objects.filter(package_url__in=purls).order_by("package_url")
+            query = PackageV2.objects.filter_purls(purls).order_by("package_url")
 
+        if request:
+            base_url = request.build_absolute_uri("/")[:-1]
         page = self.paginate_queryset(query)
-        affected_advisory_map = get_affected_advisories_bulk(page)
-        fixing_advisory_map = get_fixing_advisories_bulk(page)
-        impact_map = get_impacts_bulk(page)
+        affected_advisory_map = get_affected_advisories_bulk(page, max_advisories, base_url)
+        fixing_advisory_map = get_fixing_advisories_bulk(page, max_advisories, base_url)
         serializer = self.get_serializer(
             page,
             many=True,
             context={
                 "request": request,
                 "advisory_map": affected_advisory_map,
-                "impact_map": impact_map,
                 "fixing_advisory_map": fixing_advisory_map,
+                "max_advisories": max_advisories,
             },
         )
         return self.get_paginated_response(serializer.data)
@@ -542,8 +399,26 @@ class AdvisoryV3ViewSet(viewsets.GenericViewSet):
             ),
             "weaknesses",
             "aliases",
-            "related_ssvcs__source_advisory",
-            "source_ssvcs__source_advisory",
+            Prefetch(
+                "related_ssvcs",
+                queryset=SSVC.objects.only(
+                    "id",
+                    "vector",
+                    "decision",
+                    "options",
+                    "source_advisory__url",
+                ),
+            ),
+            Prefetch(
+                "source_ssvcs",
+                queryset=SSVC.objects.only(
+                    "id",
+                    "vector",
+                    "decision",
+                    "options",
+                    "source_advisory__url",
+                ),
+            ),
         )
 
         page = self.paginate_queryset(latest_advisories)
@@ -574,16 +449,63 @@ class AffectedByAdvisoriesViewSet(PackageAdvisoriesViewSet):
     serializer_class = AffectedByAdvisoryV3Serializer
 
 
-def get_affected_advisories_bulk(packages):
+def get_affected_advisories_bulk(packages, max_advisories, base_url):
     package_ids = [p.id for p in packages]
+
+    package_ids_with_multiple_importers = PackageV2.objects.filter(
+        type__in=TYPES_WITH_MULTIPLE_IMPORTERS, id__in=package_ids
+    ).values_list("id", flat=True)
+
+    packages_without_multiple_importers = (
+        PackageV2.objects.filter(id__in=package_ids)
+        .exclude(id__in=package_ids_with_multiple_importers)
+        .only("id", "package_url")
+    )
+
+    result = {}
+
+    impacts = (
+        ImpactedPackageAffecting.objects.filter(
+            package_id__in=package_ids,
+            impacted_package__advisory__is_latest=True,
+            impacted_package__advisory___all_impacts_unfurled_at__isnull=False,
+        )
+        .values(
+            "package_id",
+            "impacted_package__advisory_id",
+        )
+        .annotate(
+            fixed_by_packages=ArrayAgg(
+                "impacted_package__fixed_by_packages__package_url",
+                distinct=True,
+                filter=Q(impacted_package__fixed_by_packages__package_url__isnull=False),
+            )
+        )
+    )
+
+    impact_by_package_and_advisory = {
+        (
+            row["package_id"],
+            row["impacted_package__advisory_id"],
+        ): row["fixed_by_packages"]
+        or []
+        for row in impacts
+    }
+
+    # Package types with multiple importers
 
     advisory_sets = list(
         AdvisorySet.objects.filter(
-            package_id__in=package_ids,
+            package_id__in=package_ids_with_multiple_importers,
             relation_type="affecting",
         )
         .select_related("primary_advisory")
-        .prefetch_related(Prefetch("aliases", queryset=AdvisoryAlias.objects.only("alias")))
+        .prefetch_related(
+            Prefetch(
+                "aliases",
+                queryset=AdvisoryAlias.objects.only("alias"),
+            ),
+        )
         .annotate(
             max_severity=Max(
                 "members__advisory__weighted_severity",
@@ -601,13 +523,89 @@ def get_affected_advisories_bulk(packages):
         )
     )
 
+    advisory_set_ids = [a.id for a in advisory_sets]
+
+    member_rows = AdvisorySetMember.objects.filter(
+        advisory_set_id__in=advisory_set_ids,
+    ).values(
+        "advisory_set_id",
+        "advisory_id",
+    )
+
+    advisory_ids_by_set = defaultdict(set)
+    all_advisory_ids = set()
+
+    for row in member_rows:
+        advisory_set_id = row["advisory_set_id"]
+        advisory_id = row["advisory_id"]
+
+        advisory_ids_by_set[advisory_set_id].add(advisory_id)
+        all_advisory_ids.add(advisory_id)
+
+    ssvc_rows = (
+        SSVC.objects.filter(
+            related_advisories__id__in=all_advisory_ids,
+            decision__isnull=False,
+        )
+        .select_related(
+            "source_advisory",
+        )
+        .values(
+            "related_advisories__id",
+            "vector",
+            "decision",
+            "options",
+            "source_advisory__url",
+        )
+    )
+
+    ssvc_by_advisory = defaultdict(list)
+
+    for row in ssvc_rows:
+        advisory_id = row["related_advisories__id"]
+
+        ssvc_by_advisory[advisory_id].append(
+            {
+                "vector": row["vector"],
+                "decision": row["decision"],
+                "options": row["options"],
+                "source_url": row["source_advisory__url"],
+            }
+        )
+
     package_map = defaultdict(list)
 
     for adv in advisory_sets:
         adv._aliases_cache = [a.alias for a in adv.aliases.all()]
-        package_map[adv.package_id].append(adv)
 
-    result = {}
+        advisory_ids = advisory_ids_by_set.get(adv.id, set())
+
+        seen = set()
+        ssvc_trees = []
+
+        for advisory_id in advisory_ids:
+            for ssvc in ssvc_by_advisory.get(advisory_id, []):
+
+                key = (
+                    ssvc["vector"],
+                    ssvc["decision"],
+                    (
+                        tuple(sorted(ssvc["options"].items()))
+                        if isinstance(ssvc["options"], dict)
+                        else str(ssvc["options"])
+                    ),
+                    ssvc["source_url"],
+                )
+
+                if key in seen:
+                    continue
+
+                seen.add(key)
+                ssvc_trees.append(ssvc)
+
+        adv.ssvc_trees = ssvc_trees
+
+        package_map[adv.package_id].append(adv)
 
     for package in packages:
         groups = package_map.get(package.id, [])
@@ -615,6 +613,11 @@ def get_affected_advisories_bulk(packages):
 
         for adv in groups:
             primary = adv.primary_advisory
+
+            fixed_by_packages = impact_by_package_and_advisory.get(
+                (package.id, primary.id),
+                [],
+            )
 
             max_sev = adv.max_severity or 0.0
             max_exp = adv.max_exploitability or 0.0
@@ -628,64 +631,151 @@ def get_affected_advisories_bulk(packages):
 
             aliases = [a for a in adv._aliases_cache if a != identifier]
 
+            resource_url = None
+            advisory_url = primary.get_absolute_url()
+
+            if base_url and advisory_url:
+                resource_url = f"{base_url}{advisory_url}"
+
             grouped.append(
                 {
                     "advisory_id": identifier,
                     "advisory_uid": primary.avid,
                     "aliases": aliases,
+                    "summary": primary.summary,
                     "weighted_severity": weighted_severity,
                     "exploitability": exploitability,
                     "risk_score": risk_score,
-                    "summary": primary.summary,
+                    "fixed_by_packages": fixed_by_packages,
+                    "ssvc_trees": adv.ssvc_trees,
+                    "resource_url": resource_url,
                 }
             )
 
         result[package.id] = grouped
 
+    # Package types without multiple importers
+
+    packages = list(packages_without_multiple_importers)
+
+    package_by_purl = {package.package_url: package for package in packages}
+
+    purls = list(package_by_purl.keys())
+
+    advisory_ids_by_purl = defaultdict(list)
+
+    for purl, advisory_id in AdvisoryV2.objects.latest_affecting_advisory_purls_pairs(purls):
+        advisory_ids_by_purl[purl].append(advisory_id)
+
+    allowed_package_ids = []
+    allowed_advisory_ids = set()
+
+    for package in packages:
+        advisory_ids = advisory_ids_by_purl.get(package.package_url, [])
+
+        if len(advisory_ids) > max_advisories:
+            result[package.id] = None
+            continue
+
+        allowed_package_ids.append(package.id)
+        allowed_advisory_ids.update(advisory_ids)
+
+    if not allowed_package_ids:
+        return result
+
+    advisories = AdvisoryV2.objects.filter(
+        id__in=allowed_advisory_ids,
+    ).prefetch_related(
+        "aliases",
+        Prefetch(
+            "related_ssvcs",
+            queryset=(
+                SSVC.objects.select_related("source_advisory")
+                .only(
+                    "id",
+                    "decision",
+                    "options",
+                    "vector",
+                    "source_advisory__url",
+                )
+                .distinct("source_advisory__url")
+            ),
+            to_attr="prefetched_ssvc_trees",
+        ),
+    )
+
+    advisory_by_id = {advisory.id: advisory for advisory in advisories}
+
+    for package in packages:
+
+        package_result = []
+
+        for advisory_id in advisory_ids_by_purl.get(package.package_url, []):
+
+            advisory = advisory_by_id.get(advisory_id)
+
+            if not advisory:
+                continue
+
+            fixed_by_packages = impact_by_package_and_advisory.get(
+                (package.id, advisory_id),
+                [],
+            )
+
+            identifier = advisory.advisory_id.split("/")[-1]
+
+            aliases = [alias.alias for alias in advisory.aliases.all() if alias.alias != identifier]
+
+            resource_url = None
+            advisory_url = advisory.get_absolute_url()
+
+            if base_url and advisory_url:
+                resource_url = f"{base_url}{advisory_url}"
+
+            package_result.append(
+                {
+                    "advisory_id": identifier,
+                    "advisory_uid": advisory.avid,
+                    "aliases": aliases,
+                    "summary": advisory.summary,
+                    "weighted_severity": advisory.weighted_severity,
+                    "exploitability": advisory.exploitability,
+                    "risk_score": advisory.risk_score,
+                    "fixed_by_packages": fixed_by_packages,
+                    "ssvc_trees": [
+                        {
+                            "vector": ssvc.vector,
+                            "decision": ssvc.decision,
+                            "options": ssvc.options,
+                            "source_url": ssvc.source_advisory.url,
+                        }
+                        for ssvc in advisory.prefetched_ssvc_trees
+                    ],
+                    "resource_url": resource_url,
+                }
+            )
+
+        result[package.id] = package_result
+
     return result
 
 
-def get_impacts_bulk(packages):
+def get_fixing_advisories_bulk(packages, max_advisories, base_url):
     package_ids = [p.id for p in packages]
 
-    impacts = (
-        ImpactedPackageAffecting.objects.filter(package_id__in=package_ids)
-        .select_related("impacted_package__advisory")
-        .prefetch_related(
-            Prefetch(
-                "impacted_package__fixed_by_packages",
-                queryset=PackageV2.objects.only("package_url"),
-            )
-        )
-        .only(
-            "package_id",
-            "impacted_package_id",
-            "impacted_package__advisory_id",
-            "impacted_package__advisory__avid",
-        )
+    package_ids_with_multiple_importers = PackageV2.objects.filter(
+        type__in=TYPES_WITH_MULTIPLE_IMPORTERS, id__in=package_ids
+    ).values_list("id", flat=True)
+
+    packages_without_multiple_importers = (
+        PackageV2.objects.filter(id__in=package_ids)
+        .exclude(id__in=package_ids_with_multiple_importers)
+        .only("id", "package_url")
     )
-
-    impact_map = defaultdict(dict)
-    fixed_cache = {}
-
-    for impact in impacts:
-        ip = impact.impacted_package
-        avid = ip.advisory.avid
-
-        if ip.id not in fixed_cache:
-            fixed_cache[ip.id] = list({pkg.purl for pkg in ip.fixed_by_packages.all()})
-
-        impact_map[impact.package_id][avid] = fixed_cache[ip.id]
-
-    return impact_map
-
-
-def get_fixing_advisories_bulk(packages):
-    package_ids = [p.id for p in packages]
 
     advisory_sets = list(
         AdvisorySet.objects.filter(
-            package_id__in=package_ids,
+            package_id__in=package_ids_with_multiple_importers,
             relation_type="fixing",
         ).only(
             "id",
@@ -697,7 +787,7 @@ def get_fixing_advisories_bulk(packages):
     package_map = defaultdict(list)
 
     for adv in advisory_sets:
-        package_map[adv.package_id].append(adv.primary_advisory.advisory_id)
+        package_map[adv.package_id].append(adv.primary_advisory)
 
     result = {}
 
@@ -705,11 +795,79 @@ def get_fixing_advisories_bulk(packages):
         groups = package_map.get(package.id, [])
         grouped = []
 
-        for adv_id in groups:
+        for advisory in groups:
+            resource_url = None
+            advisory_url = advisory.get_absolute_url()
+
+            if base_url and advisory_url:
+                resource_url = f"{base_url}{advisory_url}"
             grouped.append(
-                {"advisory_id": adv_id.split("/")[-1], "advisory_uid": adv_id.split("/")[-1]}
+                {
+                    "advisory_id": advisory.advisory_id.split("/")[-1],
+                    "resource_url": resource_url,
+                    "advisory_uid": advisory.avid,
+                }
             )
 
         result[package.id] = grouped
+
+    packages = list(packages_without_multiple_importers)
+
+    package_by_purl = {package.package_url: package for package in packages}
+
+    purls = list(package_by_purl.keys())
+
+    advisory_ids_by_purl = defaultdict(list)
+
+    for purl, advisory_id in AdvisoryV2.objects.latest_fixed_by_advisory_purls_pairs(purls):
+        advisory_ids_by_purl[purl].append(advisory_id)
+
+    allowed_package_ids = []
+    allowed_advisory_ids = set()
+
+    for package in packages:
+        advisory_ids = advisory_ids_by_purl.get(package.package_url, [])
+
+        if len(advisory_ids) > max_advisories:
+            result[package.id] = None
+            continue
+
+        allowed_package_ids.append(package.id)
+        allowed_advisory_ids.update(advisory_ids)
+
+    if not allowed_package_ids:
+        return result
+
+    advisories = AdvisoryV2.objects.filter(
+        id__in=allowed_advisory_ids,
+    )
+
+    advisory_by_id = {advisory.id: advisory for advisory in advisories}
+
+    for package in packages:
+
+        package_result = []
+
+        for advisory_id in advisory_ids_by_purl.get(package.package_url, []):
+
+            advisory = advisory_by_id.get(advisory_id)
+
+            if not advisory:
+                continue
+
+            resource_url = None
+            advisory_url = advisory.get_absolute_url()
+
+            if base_url and advisory_url:
+                resource_url = f"{base_url}{advisory_url}"
+
+            package_result.append(
+                {
+                    "advisory_id": advisory.advisory_id.split("/")[-1],
+                    "resource_url": resource_url,
+                    "advisory_uid": advisory.avid,
+                }
+            )
+        result[package.id] = package_result
 
     return result

@@ -23,6 +23,7 @@ from django.core.mail import send_mail
 from django.db.models import Exists
 from django.db.models import OuterRef
 from django.db.models import Prefetch
+from django.db.models import Q
 from django.http import HttpResponse
 from django.http.response import Http404
 from django.shortcuts import get_object_or_404
@@ -49,6 +50,8 @@ from vulnerabilities.models import AdvisoryToDoV2
 from vulnerabilities.models import AdvisoryV2
 from vulnerabilities.models import Group
 from vulnerabilities.models import GroupedAdvisory
+from vulnerabilities.models import ImpactedPackageAffecting
+from vulnerabilities.models import ImpactedPackageFixedBy
 from vulnerabilities.models import PipelineRun
 from vulnerabilities.models import PipelineSchedule
 from vulnerabilities.pipelines.v2_importers.epss_importer_v2 import EPSSImporterPipeline
@@ -58,7 +61,6 @@ from vulnerabilities.tasks import compute_queue_load_factor
 from vulnerabilities.throttling import AnonUserUIThrottle
 from vulnerabilities.utils import TYPES_WITH_MULTIPLE_IMPORTERS
 from vulnerabilities.utils import get_advisories_from_groups
-from vulnerabilities.utils import merge_and_save_grouped_advisories
 from vulnerablecode import __version__ as VULNERABLECODE_VERSION
 from vulnerablecode.settings import env
 
@@ -208,11 +210,28 @@ class PackageSearchV2(VulnerableCodeListView):
     def get_queryset(self, query=None):
         """
         Return a Package queryset for the ``query``.
-        Make a best effort approach to find matching packages either based
-        on exact purl, partial purl or just name and namespace.
         """
+
         query = query or self.request.GET.get("search") or ""
-        return self.model.objects.search(query).prefetch_related().with_is_vulnerable()
+
+        qs = self.model.objects.search(query)
+
+        affecting_exists = ImpactedPackageAffecting.objects.filter(
+            package_id=OuterRef("pk"),
+            impacted_package__advisory___all_impacts_unfurled_at__isnull=False,
+            impacted_package__advisory__is_latest=True,
+        )
+
+        fixed_by_exists = ImpactedPackageFixedBy.objects.filter(
+            package_id=OuterRef("pk"),
+            impacted_package__advisory___all_impacts_unfurled_at__isnull=False,
+            impacted_package__advisory__is_latest=True,
+        )
+
+        return qs.annotate(
+            is_vulnerable=Exists(affecting_exists),
+            is_fixing=Exists(fixed_by_exists),
+        ).filter(Q(is_vulnerable=True) | Q(is_fixing=True))
 
 
 class AffectedByAdvisoriesListView(VulnerableCodeListView):
@@ -395,42 +414,6 @@ class PackageV2Details(VulnerableCodeDetailView):
 
             return context
 
-        if package.type in TYPES_WITH_MULTIPLE_IMPORTERS:
-            affecting_advisories = AdvisoryV2.objects.latest_affecting_advisories_for_purl(
-                purl=package.purl
-            )
-
-            fixed_by_advisories = AdvisoryV2.objects.latest_fixed_by_advisories_for_purl(
-                purl=package.purl
-            )
-            fixed_pkg_details = get_fixed_package_details(package)
-            context["fixed_package_details"] = fixed_pkg_details
-            context["grouped"] = True
-
-            affecting_advisories = affecting_advisories.prefetch_related(
-                "aliases",
-                "impacted_packages__affecting_packages",
-                "impacted_packages__fixed_by_packages",
-            )
-
-            affected_by_advisories: List[GroupedAdvisory] = merge_and_save_grouped_advisories(
-                package, affecting_advisories, "affecting"
-            )
-
-            fixed_by_advisories = fixed_by_advisories.prefetch_related(
-                "aliases",
-                "impacted_packages__affecting_packages",
-                "impacted_packages__fixed_by_packages",
-            )
-
-            fixing_advisories: List[GroupedAdvisory] = merge_and_save_grouped_advisories(
-                package, fixed_by_advisories, "fixing"
-            )
-
-            context["affected_by_advisories_v2"] = affected_by_advisories
-            context["fixing_advisories_v2"] = fixing_advisories
-            return context
-
     def get_object(self, queryset=None):
         if queryset is None:
             queryset = self.get_queryset()
@@ -463,7 +446,11 @@ def get_fixed_package_details(package):
         p.id: p
         for p in models.PackageV2.objects.filter(id__in=pkg_ids, is_ghost=False).annotate(
             is_vulnerable=Exists(
-                models.ImpactedPackage.objects.filter(affecting_packages=OuterRef("pk"))
+                models.ImpactedPackage.objects.filter(
+                    affecting_packages=OuterRef("pk"),
+                    advisory__is_latest=True,
+                    advisory___all_impacts_unfurled_at__isnull=False,
+                )
             )
         )
     }
@@ -932,7 +919,9 @@ class AdvisoryPackagesDetails(VulnerableCodeDetailView):
             .prefetch_related(
                 Prefetch(
                     "impacted_packages",
-                    queryset=models.ImpactedPackage.objects.prefetch_related(
+                    queryset=models.ImpactedPackage.objects.filter(
+                        advisory__is_latest=True, advisory___all_impacts_unfurled_at__isnull=False
+                    ).prefetch_related(
                         Prefetch(
                             "affecting_packages",
                             queryset=models.PackageV2.objects.only(

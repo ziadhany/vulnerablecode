@@ -8,6 +8,7 @@
 #
 
 from django.urls import reverse
+from django.utils import timezone
 from packageurl import PackageURL
 from rest_framework import status
 from rest_framework.test import APIClient
@@ -15,7 +16,6 @@ from rest_framework.test import APITestCase
 from univers.version_range import PypiVersionRange
 
 from vulnerabilities.importer import AdvisoryDataV2
-from vulnerabilities.models import AdvisoryV2
 from vulnerabilities.models import PackageV2
 from vulnerabilities.pipes.advisory import insert_advisory_v2
 from vulnerabilities.tests.pipelines import TestLogger
@@ -36,10 +36,12 @@ class APIV3TestCase(APITestCase):
             datasource_id="ghsa",
             logger=self.logger.write,
         )
+        self.advisory.save()
 
         self.package = PackageV2.objects.from_purl(purl="pkg:pypi/sample@1.0.0")
         self.impact = ImpactedPackage.objects.create(
-            advisory=self.advisory, base_purl="pkg:pypi/sample"
+            advisory=self.advisory,
+            base_purl="pkg:pypi/sample",
         )
         self.impact.affecting_packages.add(self.package)
 
@@ -67,7 +69,7 @@ class APIV3TestCase(APITestCase):
     def test_packages_post_with_details(self):
         url = reverse("package-v3-list")
 
-        with self.assertNumQueries(31):
+        with self.assertNumQueries(13):
             response = self.client.post(
                 url,
                 data={
@@ -182,7 +184,10 @@ class APIV3TestCaseOnePackageMultipleAdvisories(APITestCase):
                 original_advisory_text="Sample advisory text",
             )
 
-            insert_advisory_v2(advisory, "ghsa_importer", print, "ghsa", 100)
+            advisory_obj = insert_advisory_v2(advisory, "ghsa_importer", print, "ghsa", 100)
+            cur = timezone.now()
+            advisory_obj._all_impacts_unfurled_at = cur
+            advisory_obj.save()
 
         self.client = APIClient(enforce_csrf_checks=True)
 
@@ -225,7 +230,10 @@ class APIV3TestCaseOneAdvisoryMultiplePackages(APITestCase):
             original_advisory_text="Sample advisory text",
         )
 
-        insert_advisory_v2(advisory, "ghsa_importer", print, "ghsa", 100)
+        advisory_obj = insert_advisory_v2(advisory, "ghsa_importer", print, "ghsa", 100)
+        cur = timezone.now()
+        advisory_obj._all_impacts_unfurled_at = cur
+        advisory_obj.save()
 
         self.client = APIClient(enforce_csrf_checks=True)
 

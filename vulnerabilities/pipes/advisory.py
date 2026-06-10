@@ -47,6 +47,7 @@ from vulnerabilities.models import VulnerabilityReference
 from vulnerabilities.models import VulnerabilityRelatedReference
 from vulnerabilities.models import VulnerabilitySeverity
 from vulnerabilities.models import Weakness
+from vulnerabilities.pipes.risk_score import compute_advisory_risk_score
 from vulnerabilities.pipes.univers_utils import get_exact_purls_v2
 
 
@@ -362,6 +363,18 @@ def insert_advisory_v2(
         if values:
             getattr(advisory_obj, field_name).add(*values)
 
+    weighted_severity, exploitability, risk_score = compute_advisory_risk_score(advisory_obj)
+    advisory_obj.weighted_severity = (
+        round(weighted_severity, 1) if weighted_severity is not None else None
+    )
+    advisory_obj.exploitability = round(exploitability, 1) if exploitability is not None else None
+    advisory_obj.risk_score = round(risk_score, 1) if risk_score is not None else None
+    cur = datetime.now(timezone.utc)
+    if not advisory.affected_packages:
+        advisory_obj._all_impacts_unfurled_at = cur
+        advisory_obj._all_impacts_unfurled_successfully_at = cur
+    advisory_obj.save()
+
     for affected_pkg in advisory.affected_packages:
         impact = ImpactedPackage.objects.create(
             advisory=advisory_obj,
@@ -389,6 +402,11 @@ def insert_advisory_v2(
 
         impact.affecting_packages.add(*affected_packages_v2)
         impact.fixed_by_packages.add(*fixed_packages_v2)
+
+        if affected_packages_v2:
+            affected_packages_v2[0].calculate_version_rank
+        elif fixed_packages_v2:
+            fixed_packages_v2[0].calculate_version_rank
 
         introduced_commit_v2 = get_or_create_advisory_package_commit_patches(
             affected_pkg.introduced_by_commit_patches

@@ -12,6 +12,7 @@ from datetime import timedelta
 from traceback import format_exc as traceback_format_exc
 
 from aboutcode.pipeline import LoopProgress
+from django.db import transaction
 from django.db.models import F
 from django.db.models import Q
 from django.utils import timezone
@@ -20,12 +21,17 @@ from packageurl import PackageURL
 from univers.version_range import RANGE_CLASS_BY_SCHEMES
 from univers.version_range import VersionRange
 
+from vulnerabilities.models import AdvisoryV2
 from vulnerabilities.models import ImpactedPackage
 from vulnerabilities.models import ImpactedPackageAffecting
+from vulnerabilities.models import ImpactedPackageFixedBy
 from vulnerabilities.models import PackageV2
 from vulnerabilities.models import PipelineSchedule
 from vulnerabilities.pipelines import VulnerableCodePipeline
 from vulnerabilities.pipes.fetchcode_utils import get_versions
+from vulnerabilities.pipes.group_advisories import group_advisory_for_package
+from vulnerabilities.pipes.risk_score import compute_package_risk_score_bulk
+from vulnerabilities.utils import TYPES_WITH_MULTIPLE_IMPORTERS
 from vulnerabilities.utils import update_purl_version
 
 
@@ -38,26 +44,32 @@ class UnfurlVersionRangePipeline(VulnerableCodePipeline):
 
     pipeline_id = "unfurl_version_range_v2"
 
-    run_interval = 2
+    run_interval = 1
     run_priority = PipelineSchedule.ExecutionPriority.HIGH
 
     # Days elapsed before version range is re-unfurled
     reunfurl_after_days = 2
+    impacted_packages = None
 
     @classmethod
     def steps(cls):
         return (cls.unfurl_version_range,)
 
     def unfurl_version_range(self):
+        cur_time = timezone.now()
+        ImpactedPackage.objects.filter(
+            Q(affecting_vers__isnull=True) | Q(affecting_vers="")
+        ).update(last_range_unfurl_at=cur_time, last_successful_range_unfurl_at=cur_time)
         processed_impacted_packages_count = 0
         processed_affected_packages_count = 0
         cached_versions = {}
         update_unfurl_date = []
         update_successful_unfurl_date = []
-        update_batch_size = 5000
-        chunk_size = 5000
+        update_batch_size = 500
+        chunk_size = 500
 
         impacted_packages = impacted_package_qs(cutoff_day=self.reunfurl_after_days)
+        self.impacted_packages = impacted_packages
         impacted_packages_count = impacted_packages.count()
         self.log(f"Unfurl affected vers range for {impacted_packages_count:,d} ImpactedPackage.")
 
@@ -96,20 +108,23 @@ class UnfurlVersionRangePipeline(VulnerableCodePipeline):
             processed_impacted_packages_count += 1
 
             if len(update_unfurl_date) > update_batch_size:
+                cur_time = timezone.now()
                 ImpactedPackage.objects.filter(pk__in=update_unfurl_date).update(
-                    last_range_unfurl_at=timezone.now()
+                    last_range_unfurl_at=cur_time
                 )
                 ImpactedPackage.objects.filter(pk__in=update_successful_unfurl_date).update(
-                    last_successful_range_unfurl_at=timezone.now()
+                    last_successful_range_unfurl_at=cur_time
                 )
                 update_unfurl_date.clear()
                 update_successful_unfurl_date.clear()
 
+        cur_time = timezone.now()
+
         ImpactedPackage.objects.filter(pk__in=update_unfurl_date).update(
-            last_range_unfurl_at=timezone.now()
+            last_range_unfurl_at=cur_time
         )
         ImpactedPackage.objects.filter(pk__in=update_successful_unfurl_date).update(
-            last_successful_range_unfurl_at=timezone.now()
+            last_successful_range_unfurl_at=cur_time
         )
         self.log(f"Successfully processed {processed_impacted_packages_count:,d} ImpactedPackage.")
         self.log(f"{processed_affected_packages_count:,d} new Impact-Package relation created.")
@@ -159,8 +174,11 @@ def get_purl_versions(purl, cached_versions, logger):
     return cached_versions.get(purl) or []
 
 
+@transaction.atomic
 def bulk_create_with_m2m(purls, impact, relation, logger):
-    """Bulk create PackageV2 and also bulk populate M2M Impact and Package relationships."""
+    """Bulk create PackageV2 and also bulk populate M2M Impact and Package relationships.
+    This function assumes same base purl is used for all versions in ``purls`` list.
+    """
     if not purls:
         return 0
 
@@ -190,8 +208,9 @@ def impacted_package_qs(cutoff_day=2):
         ImpactedPackage.objects.filter(
             (Q(last_range_unfurl_at__isnull=True) | Q(last_range_unfurl_at__lte=cutoff))
             & Q(affecting_vers__isnull=False)
+            & Q(advisory__is_latest=True)
             & ~Q(affecting_vers="")
         )
-        .order_by(F("last_range_unfurl_at").asc(nulls_first=True))
+        .order_by("advisory__id", F("last_range_unfurl_at").asc(nulls_first=True))
         .only("pk", "affecting_vers", "advisory", "base_purl")
     )

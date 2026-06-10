@@ -5,7 +5,12 @@ next release
 ---------------------
 
 - WARNING: Vulnerablecode V1 API and UI has stopped supporting Ubuntu OVAL advisories, please shift to V3 API for new Ubuntu advisories.
-- Add attribute ``pipeline_id`` to AdvisoryV2 to track the pipeline that created the advisory, also rename existing ``datasource_id`` and AVIDs. 
+- WARNING: We will deprecate improver pipelines for calculating package version rank and grouping advisories for packages.
+- Add attribute ``pipeline_id`` to AdvisoryV2 to track the pipeline that created the advisory, also rename existing ``datasource_id`` and AVIDs.
+- We will group advisories for packages and calculate package risk score and advisory risk score only when an advisory is completely unfurled,
+  this will improve consistency of the data. In future if we change our grouping approach we have to make a migration to mark all advisories 
+  as not unfurled, so they can be goruped again with the new algo.
+
 
 Version v38.6.0
 ---------------------

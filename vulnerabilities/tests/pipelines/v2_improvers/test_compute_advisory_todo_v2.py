@@ -7,10 +7,11 @@
 # See https://aboutcode.org for more information about nexB OSS projects.
 #
 
-import json
+from collections.abc import Mapping
 from datetime import datetime
 
 from django.test import TestCase
+from django.utils import timezone
 from packageurl import PackageURL
 from univers.version_range import VersionRange
 
@@ -189,6 +190,8 @@ class TestComputeToDo(TestCase):
         )
         adv = AdvisoryV2.objects.first()
         adv.summary = ""
+        cur = timezone.now()
+        adv._all_impacts_unfurled_at = cur
         adv.save()
         pipeline = ComputeToDo()
         pipeline.execute()
@@ -199,13 +202,16 @@ class TestComputeToDo(TestCase):
         self.assertEqual(1, todo.advisories.count())
 
     def test_advisory_todo_missing_fixed(self):
-        insert_advisory_v2(
+        adv = insert_advisory_v2(
             advisory=self.advisory_data2,
             pipeline_id="test_pipeline1",
             logger=self.log.write,
             datasource_id="test1",
         )
         pipeline = ComputeToDo()
+        cur = timezone.now()
+        adv._all_impacts_unfurled_at = cur
+        adv.save()
         pipeline.execute()
 
         todo = AdvisoryToDoV2.objects.first()
@@ -214,12 +220,15 @@ class TestComputeToDo(TestCase):
         self.assertEqual(1, todo.advisories.count())
 
     def test_advisory_todo_missing_affected(self):
-        insert_advisory_v2(
+        adv = insert_advisory_v2(
             advisory=self.advisory_data3,
             logger=self.log.write,
             datasource_id="test1",
             pipeline_id="test_pipeline1",
         )
+        cur = timezone.now()
+        adv._all_impacts_unfurled_at = cur
+        adv.save()
         pipeline = ComputeToDo()
         pipeline.execute()
 
@@ -293,20 +302,6 @@ class TestComputeToDo(TestCase):
                     "package": {
                         "type": "npm",
                         "namespace": "",
-                        "name": "package1",
-                        "version": "",
-                        "qualifiers": "",
-                        "subpath": "",
-                    },
-                    "affected_version_range": "vers:npm/>=1.0.0|<=2.0.0",
-                    "fixed_version_range": "vers:npm/2.0.1",
-                    "introduced_by_commit_patches": [],
-                    "fixed_by_commit_patches": [],
-                },
-                {
-                    "package": {
-                        "type": "npm",
-                        "namespace": "",
                         "name": "package2",
                         "version": "",
                         "qualifiers": "",
@@ -342,6 +337,20 @@ class TestComputeToDo(TestCase):
                     },
                     "affected_version_range": "vers:pypi/>=1.0.0|<=2.0.0",
                     "fixed_version_range": "vers:pypi/2.0.1",
+                    "introduced_by_commit_patches": [],
+                    "fixed_by_commit_patches": [],
+                },
+                {
+                    "package": {
+                        "type": "npm",
+                        "namespace": "",
+                        "name": "package1",
+                        "version": "",
+                        "qualifiers": "",
+                        "subpath": "",
+                    },
+                    "affected_version_range": "vers:npm/>=1.0.0|<=2.0.0",
+                    "fixed_version_range": "vers:npm/2.0.1",
                     "introduced_by_commit_patches": [],
                     "fixed_by_commit_patches": [],
                 },
@@ -381,7 +390,10 @@ class TestComputeToDo(TestCase):
         result_partial_curation = issue_details["partial_curation_advisory"]
         self.assertEqual(1, AdvisoryToDoV2.objects.count())
         self.assertEqual("CONFLICTING_FIXED_BY_PACKAGES", todo.issue_type)
-        self.assertDictEqual(expected_partial_curation_advisory, result_partial_curation)
+        self.assertEqual(
+            normalize(expected_partial_curation_advisory),
+            normalize(result_partial_curation),
+        )
 
     def test_todo_conflict_details_partial_curation_unpaired_purl_and_conflicting_affected_and_fixed(
         self,
@@ -513,7 +525,10 @@ class TestComputeToDo(TestCase):
         result_partial_curation = issue_details["partial_curation_advisory"]
         self.assertEqual(1, AdvisoryToDoV2.objects.count())
         self.assertEqual("CONFLICTING_FIXED_BY_PACKAGES", todo.issue_type)
-        self.assertDictEqual(expected_partial_curation_advisory, result_partial_curation)
+        self.assertEqual(
+            normalize(expected_partial_curation_advisory),
+            normalize(result_partial_curation),
+        )
 
     def test_todo_conflict_details_partial_curation_unpaired_purl_and_conflicting_affected(self):
         expected_partial_curation_advisory = {
@@ -586,3 +601,18 @@ class TestComputeToDo(TestCase):
         self.assertEqual(1, AdvisoryToDoV2.objects.count())
         self.assertEqual("CONFLICTING_AFFECTED_PACKAGES", todo.issue_type)
         self.assertDictEqual(expected_partial_curation_advisory, result_partial_curation)
+
+
+def normalize(obj):
+    if isinstance(obj, Mapping):
+        return {k: normalize(v) for k, v in sorted(obj.items())}
+
+    if isinstance(obj, list):
+        normalized = [normalize(item) for item in obj]
+
+        return sorted(
+            normalized,
+            key=lambda x: repr(x),
+        )
+
+    return obj

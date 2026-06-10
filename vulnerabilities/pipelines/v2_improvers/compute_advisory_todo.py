@@ -49,6 +49,7 @@ class ComputeToDo(VulnerableCodePipeline):
         advisories = (
             AdvisoryV2.objects.todo_excluded()
             .latest_per_avid()
+            .filter(_all_impacts_unfurled_at__isnull=False)
             .exclude(advisory_todos__issue_type="MISSING_SUMMARY")
             .exclude(advisory_todos__issue_type="MISSING_AFFECTED_PACKAGE")
             .exclude(advisory_todos__issue_type="MISSING_FIXED_BY_PACKAGE")

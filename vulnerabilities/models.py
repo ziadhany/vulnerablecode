@@ -19,6 +19,7 @@ from functools import cached_property
 from itertools import groupby
 from operator import attrgetter
 from traceback import format_exc as traceback_format_exc
+from typing import Dict
 from typing import List
 from typing import NamedTuple
 from typing import Optional
@@ -2933,79 +2934,137 @@ class AdvisoryV2QuerySet(BaseQuerySet):
     def latest_for_avids(self, avids):
         return self.filter(avid__in=avids).latest_per_avid()
 
+    def latest_for_avid_completely_imported_advisories(self, avid):
+        return self.get(avid=avid, is_latest=True, _all_impacts_unfurled_at__isnull=False)
+
+    def latest_completely_imported_advisories_per_avid(self):
+        return self.filter(is_latest=True, _all_impacts_unfurled_at__isnull=False)
+
+    def latest_for_avids_completely_imported_advisories(self, avids):
+        return self.get(avid__in=avids, is_latest=True, _all_impacts_unfurled_at__isnull=False)
+
     def latest_affecting_advisories_for_purl(self, purl):
-        adv_ids = ImpactedPackageAffecting.objects.filter(package__package_url=purl).values_list(
-            "impacted_package__advisory_id",
-            flat=True,
-        )
-        return self.filter(id__in=Subquery(adv_ids)).latest_per_avid()
+        adv_ids = ImpactedPackageAffecting.objects.filter(
+            package__package_url=purl,
+            impacted_package__advisory__is_latest=True,
+            impacted_package__advisory___all_impacts_unfurled_at__isnull=False,
+        ).values_list("impacted_package__advisory_id", flat=True)
+
+        return self.filter(id__in=Subquery(adv_ids))
 
     def latest_affecting_advisories_for_purls(self, purls):
         adv_ids = ImpactedPackageAffecting.objects.filter(
-            package__package_url__in=purls
+            package__package_url__in=purls,
+            impacted_package__advisory__is_latest=True,
+            impacted_package__advisory___all_impacts_unfurled_at__isnull=False,
         ).values_list(
             "impacted_package__advisory_id",
             flat=True,
         )
-        return self.filter(id__in=Subquery(adv_ids)).latest_per_avid()
+        return self.filter(id__in=Subquery(adv_ids))
 
-    def latest_affecting_advisories_for_packages(self, purls):
-        adv_ids = ImpactedPackageAffecting.objects.filter(package__in=purls).values_list(
-            "impacted_package__advisory_id",
-            flat=True,
+    def latest_affecting_advisory_purls_pairs(self, purls):
+        return (
+            ImpactedPackageAffecting.objects.filter(
+                package__package_url__in=purls,
+                impacted_package__advisory__is_latest=True,
+                impacted_package__advisory___all_impacts_unfurled_at__isnull=False,
+            )
+            .values_list(
+                "package__package_url",
+                "impacted_package__advisory_id",
+            )
+            .distinct()
         )
-        return self.filter(id__in=Subquery(adv_ids)).latest_per_avid()
 
     def latest_fixed_by_advisories_for_purl(self, purl):
-        adv_ids = ImpactedPackageFixedBy.objects.filter(package__package_url=purl).values_list(
+        adv_ids = ImpactedPackageFixedBy.objects.filter(
+            package__package_url=purl,
+            impacted_package__advisory__is_latest=True,
+            impacted_package__advisory___all_impacts_unfurled_at__isnull=False,
+        ).values_list(
             "impacted_package__advisory_id",
             flat=True,
         )
-        return self.filter(id__in=Subquery(adv_ids)).latest_per_avid()
+        return self.filter(id__in=Subquery(adv_ids))
 
     def latest_fixed_by_advisories_for_purls(self, purls):
-        adv_ids = ImpactedPackageFixedBy.objects.filter(package__package_url__in=purls).values_list(
+        adv_ids = ImpactedPackageFixedBy.objects.filter(
+            package_url__in=purls,
+            impacted_package__advisory__is_latest=True,
+            impacted_package__advisory___all_impacts_unfurled_at__isnull=False,
+        ).values_list(
             "impacted_package__advisory_id",
             flat=True,
         )
 
-        return self.filter(id__in=Subquery(adv_ids)).latest_per_avid()
+        return self.filter(id__in=Subquery(adv_ids))
+
+    def latest_fixed_by_advisory_purls_pairs(self, purls):
+        return (
+            ImpactedPackageFixedBy.objects.filter(
+                package__package_url__in=purls,
+                impacted_package__advisory__is_latest=True,
+                impacted_package__advisory___all_impacts_unfurled_at__isnull=False,
+            )
+            .values_list(
+                "package__package_url",
+                "impacted_package__advisory_id",
+            )
+            .distinct()
+        )
 
     def latest_advisories_for_purls(self, purls):
         adv_ids = (
-            ImpactedPackageAffecting.objects.filter(package__package_url__in=purls)
+            ImpactedPackage.objects.filter(
+                affecting_packages__package_url__in=purls,
+                advisory__is_latest=True,
+                advisory___all_impacts_unfurled_at__isnull=False,
+            )
             .values_list(
-                "impacted_package__advisory_id",
+                "advisory_id",
                 flat=True,
             )
             .union(
-                ImpactedPackageFixedBy.objects.filter(package__package_url__in=purls).values_list(
-                    "impacted_package__advisory_id",
+                ImpactedPackage.objects.filter(
+                    fixed_by_packages__package_url__in=purls,
+                    advisory__is_latest=True,
+                    advisory___all_impacts_unfurled_at__isnull=False,
+                ).values_list(
+                    "advisory_id",
                     flat=True,
                 )
             )
         )
 
         qs = self.filter(id__in=Subquery(adv_ids))
-        return qs.latest_per_avid()
+        return qs
 
     def latest_advisories_for_purl(self, purl):
         adv_ids = (
-            ImpactedPackageAffecting.objects.filter(package__package_url=purl)
+            ImpactedPackage.objects.filter(
+                affecting_packages__package_url=purl,
+                advisory__is_latest=True,
+                advisory___all_impacts_unfurled_at__isnull=False,
+            )
             .values_list(
-                "impacted_package__advisory_id",
+                "advisory_id",
                 flat=True,
             )
             .union(
-                ImpactedPackageFixedBy.objects.filter(package__package_url=purl).values_list(
-                    "impacted_package__advisory_id",
+                ImpactedPackage.objects.filter(
+                    fixed_by_packages__package_url=purl,
+                    advisory__is_latest=True,
+                    advisory___all_impacts_unfurled_at__isnull=False,
+                ).values_list(
+                    "advisory_id",
                     flat=True,
                 )
             )
         )
 
         qs = self.filter(id__in=Subquery(adv_ids))
-        return qs.latest_per_avid()
+        return qs
 
     def todo_excluded(self):
         """Exclude advisory ineligible for ToDo computation."""
@@ -3022,7 +3081,7 @@ class AdvisorySet(models.Model):
     ]
 
     package = models.ForeignKey("PackageV2", on_delete=models.CASCADE)
-    relation_type = models.CharField(max_length=20, choices=RELATION_TYPE_CHOICES)
+    relation_type = models.CharField(max_length=20, choices=RELATION_TYPE_CHOICES, db_index=True)
 
     aliases = models.ManyToManyField(
         AdvisoryAlias,
@@ -3033,6 +3092,12 @@ class AdvisorySet(models.Model):
     primary_advisory = models.ForeignKey("AdvisoryV2", on_delete=models.PROTECT)
 
     created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ("package", "relation_type", "primary_advisory")
+        indexes = [
+            models.Index(fields=["package", "relation_type"]),
+        ]
 
 
 class AdvisorySetMember(models.Model):
@@ -3055,7 +3120,7 @@ class AdvisoryV2(models.Model):
 
     # This is similar to a type or a namespace
     datasource_id = models.CharField(
-        max_length=200,
+        max_length=50,
         blank=False,
         null=False,
         db_index=True,
@@ -3063,7 +3128,7 @@ class AdvisoryV2(models.Model):
     )
 
     pipeline_id = models.CharField(
-        max_length=200,
+        max_length=50,
         blank=False,
         null=False,
         db_index=True,
@@ -3072,7 +3137,7 @@ class AdvisoryV2(models.Model):
 
     # This is similar to a name
     advisory_id = models.CharField(
-        max_length=500,
+        max_length=200,
         blank=False,
         null=False,
         unique=False,
@@ -3082,7 +3147,7 @@ class AdvisoryV2(models.Model):
     )
 
     avid = models.CharField(
-        max_length=500,
+        max_length=250,
         blank=False,
         null=False,
         help_text="Unique ID for the datasource used for this advisory ."
@@ -3208,6 +3273,20 @@ class AdvisoryV2(models.Model):
         help_text="Risk expressed as a number ranging from 0 to 10. Risk is calculated from weighted severity and exploitability values. It is the maximum value of (the weighted severity multiplied by its exploitability) or 10. Risk = min(weighted severity * exploitability, 10)",
     )
 
+    _all_impacts_unfurled_at = models.DateTimeField(
+        help_text="Indicates whether all impacts for this advisory have been unfurled.",
+        db_index=True,
+        blank=True,
+        null=True,
+    )
+
+    _all_impacts_unfurled_successfully_at = models.DateTimeField(
+        help_text="Indicates whether all impacts for this advisory have been unfurled successfully.",
+        db_index=True,
+        blank=True,
+        null=True,
+    )
+
     objects = AdvisoryV2QuerySet.as_manager()
 
     class Meta:
@@ -3222,7 +3301,12 @@ class AdvisoryV2(models.Model):
             models.Index(
                 fields=["avid", "-date_collected", "-id"],
                 name="advisory_latest_by_avid_idx",
-            )
+            ),
+            models.Index(
+                fields=["_all_impacts_unfurled_at", "id"],
+                name="advisory_unfurled_idx",
+            ),
+            models.Index(fields=["is_latest", "_all_impacts_unfurled_at"]),
         ]
 
     def save(self, *args, **kwargs):
@@ -3372,6 +3456,11 @@ class ImpactedPackage(models.Model):
 
         return AffectedPackageV2.from_dict(self.to_dict())
 
+    class Meta:
+        indexes = [
+            models.Index(fields=["advisory", "last_range_unfurl_at"]),
+        ]
+
 
 class ToDoRelatedAdvisory(models.Model):
     todo = models.ForeignKey(
@@ -3422,7 +3511,7 @@ class PackageQuerySetV2(BaseQuerySet, PackageURLQuerySet):
         except ValueError:
             # otherwise use query as a plain string
             qs = qs.filter(package_url__icontains=query)
-        return qs.order_by("package_url").order_by("-version_rank")
+        return qs.order_by("type", "namespace", "name", "-version_rank")
 
     def with_vulnerability_counts(self):
         return self.annotate(
@@ -3492,10 +3581,10 @@ class PackageQuerySetV2(BaseQuerySet, PackageURLQuerySet):
         return PackageV2.objects.filter(package_url__in=normalize_purls)
 
     def only_vulnerable(self):
-        return self._vulnerable(True)
+        return self._vulnerable()
 
     def only_non_vulnerable(self):
-        return self._vulnerable(False).filter(is_ghost=False)
+        return self._not_vulnerable().filter(is_ghost=False)
 
     def for_purl(self, purl):
         """
@@ -3509,17 +3598,17 @@ class PackageQuerySetV2(BaseQuerySet, PackageURLQuerySet):
         """
         return self.filter(package_url__in=purls).distinct()
 
-    def _vulnerable(self, vulnerable=True):
+    def _vulnerable(self):
         """
         Filter to select only vulnerable or non-vulnerable packages.
         """
-        return self.with_is_vulnerable().filter(is_vulnerable=vulnerable)
+        return self.with_is_vulnerable().filter(is_vulnerable=True)
 
-    def vulnerable(self):
+    def _not_vulnerable(self):
         """
-        Return only packages that are vulnerable.
+        Filter to select only vulnerable or non-vulnerable packages.
         """
-        return self.filter(id__in=ImpactedPackageAffecting.objects.values("package_id").distinct())
+        return self.with_is_not_vulnerable().filter(is_not_vulnerable=True)
 
     def with_is_vulnerable(self):
         """
@@ -3527,9 +3616,46 @@ class PackageQuerySetV2(BaseQuerySet, PackageURLQuerySet):
         """
         return self.annotate(
             is_vulnerable=Exists(
-                ImpactedPackage.objects.filter(affecting_packages__pk=OuterRef("pk"))
+                ImpactedPackageAffecting.objects.filter(
+                    package__pk=OuterRef("pk"),
+                    impacted_package__advisory__is_latest=True,
+                    impacted_package__advisory___all_impacts_unfurled_at__isnull=False,
+                )
             )
         )
+
+    def with_is_not_vulnerable(self):
+        """
+        Annotate Package with ``is_not_vulnerable`` boolean attribute.
+        """
+        return self.annotate(
+            is_not_vulnerable=Exists(
+                ImpactedPackageFixedBy.objects.filter(
+                    package__pk=OuterRef("pk"),
+                    impacted_package__advisory__is_latest=True,
+                    impacted_package__advisory___all_impacts_unfurled_at__isnull=False,
+                )
+            )
+        )
+
+    def all_vulnerable(self):
+        latest_unfurled_impacts = ImpactedPackageAffecting.objects.filter(
+            package_id=OuterRef("pk"),
+            impacted_package__advisory__is_latest=True,
+            impacted_package__advisory___all_impacts_unfurled_at__isnull=False,
+        )
+
+        query = PackageV2.objects.filter(Exists(latest_unfurled_impacts))
+        return query
+
+    def all_vulnerable_purls(self):
+        return self.all_vulnerable().values_list("package_url", flat=True)
+
+    def filter_plain_purls(self, plain_purls=[]):
+        return PackageV2.objects.filter(plain_package_url__in=plain_purls)
+
+    def filter_purls(self, purls=[]):
+        return PackageV2.objects.filter(package_url__in=purls)
 
     def from_purl(self, purl: Union[PackageURL, str]):
         """
@@ -3719,6 +3845,10 @@ class ImpactedPackageAffecting(models.Model):
 
     class Meta:
         unique_together = ("impacted_package", "package")
+        indexes = [
+            models.Index(fields=["package", "impacted_package"]),
+            models.Index(fields=["impacted_package", "package"]),
+        ]
 
 
 class ImpactedPackageFixedBy(models.Model):
@@ -3738,6 +3868,10 @@ class ImpactedPackageFixedBy(models.Model):
 
     class Meta:
         unique_together = ("impacted_package", "package")
+        indexes = [
+            models.Index(fields=["package", "impacted_package"]),
+            models.Index(fields=["impacted_package", "package"]),
+        ]
 
 
 class AdvisoryExploit(models.Model):
@@ -3875,6 +4009,7 @@ class GroupedAdvisory(NamedTuple):
     weighted_severity: Optional[float]
     exploitability: Optional[float]
     risk_score: Optional[float]
+    ssvc_trees: List[Dict]
 
 
 class AdvisoryPOC(models.Model):
