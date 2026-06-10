@@ -119,21 +119,3 @@ def compute_package_risk(package):
         return
 
     return round(max(result), 1)
-
-
-def compute_package_risk_v2(package):
-    """
-    Calculate the risk for a package by iterating over all vulnerabilities that affects this package
-    and determining the associated risk.
-    """
-
-    max_risk = (
-        AdvisoryV2.objects.latest_affecting_advisories_for_purl(package.purl).aggregate(
-            max_risk=Max("risk_score")
-        )
-    )["max_risk"]
-
-    if max_risk is None:
-        return
-
-    return round(float(max_risk), 1)

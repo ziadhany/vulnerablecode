@@ -16,6 +16,7 @@ from vulnerabilities.models import AdvisorySeverity
 from vulnerabilities.models import AdvisoryV2
 from vulnerabilities.models import PackageV2
 from vulnerabilities.pipelines import VulnerableCodePipeline
+from vulnerabilities.pipes.risk_score import bulk_update
 from vulnerabilities.risk import compute_vulnerability_risk_factors
 
 
@@ -131,7 +132,7 @@ class ComputePackageRiskPipeline(VulnerableCodePipeline):
 
     def compute_and_store_package_risk_score(self):
 
-        latest_advisories = AdvisoryV2.objects.latest_per_avid()
+        latest_advisories = AdvisoryV2.objects.latest_completely_imported_advisories_per_avid()
 
         qs = (
             PackageV2.objects.filter(
@@ -177,15 +178,3 @@ class ComputePackageRiskPipeline(VulnerableCodePipeline):
             logger=self.log,
         )
         self.log(f"Successfully added risk score for {updated:,d} package")
-
-
-def bulk_update(model, items, fields, logger):
-    item_count = 0
-    if items:
-        try:
-            model.objects.bulk_update(objs=items, fields=fields)
-            item_count += len(items)
-        except Exception as e:
-            logger(f"Error updating {model.__name__}: {e}")
-        items.clear()
-    return item_count

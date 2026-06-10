@@ -35,6 +35,7 @@ import toml
 import urllib3
 from cwe2.database import Database
 from cwe2.database import InvalidCWEError
+from django.db.models import Prefetch
 from packageurl import PackageURL
 from packageurl.contrib.django.utils import without_empty_values
 from univers.version_range import RANGE_CLASS_BY_SCHEMES
@@ -43,7 +44,6 @@ from univers.version_range import NginxVersionRange
 from univers.version_range import VersionRange
 
 from aboutcode.hashid import build_vcid
-from vulnerabilities.pipes.group_advisories import delete_and_save_advisory_set
 
 logger = logging.getLogger(__name__)
 
@@ -868,29 +868,6 @@ def compute_patch_checksum(patch_text: str):
     return hashlib.sha512(patch_text.encode("utf-8")).hexdigest()
 
 
-def merge_advisories(advisories, package):
-    """
-    Merge advisories based on their content hash and identifiers.
-    """
-    from vulnerabilities.models import Group
-
-    advisories = list(advisories)
-
-    content_hash_map = defaultdict(list)
-
-    for adv in advisories:
-        content_hash = compute_advisory_content_hash(adv, package)
-        content_hash_map[content_hash].append(adv)
-
-    final_groups: List[Group] = []
-
-    for group in content_hash_map.values():
-        groups = get_merged_identifier_groups(group)
-        final_groups.extend(groups)
-
-    return final_groups
-
-
 def compute_advisory_content_hash(adv, package):
     """Compute a content hash for an advisory based on its affected and fixed packages for a given package.
     This is used to determine if two advisories are the same based on their content."""
@@ -906,8 +883,12 @@ def compute_advisory_content_hash(adv, package):
     )
 
     for impact in adv.impacted_packages.filter(base_purl=str(version_less_purl)):
-        affected.extend([pkg.package_url for pkg in impact.affecting_packages.all()])
-        fixed.extend([pkg.package_url for pkg in impact.fixed_by_packages.all()])
+        for pkg in impact.affecting_packages.all():
+            if pkg.package_url:
+                affected.extend([pkg.package_url])
+        for pkg in impact.fixed_by_packages.all():
+            if pkg.package_url:
+                fixed.extend([pkg.package_url])
 
     normalized_data = {
         "affected_packages": normalize_list(affected),
@@ -979,10 +960,12 @@ def get_merged_identifier_groups(advisories):
     return final_groups
 
 
-def get_advisories_from_groups(groups):
+def get_advisories_from_groups(groups, include_ssvc_trees=False):
     """
     Return a list of advisories from the merged groups of advisories.
     """
+    from vulnerabilities.models import SSVC
+    from vulnerabilities.models import AdvisoryV2
     from vulnerabilities.models import Group
     from vulnerabilities.models import GroupedAdvisory
 
@@ -1016,6 +999,35 @@ def get_advisories_from_groups(groups):
         identifier = group.primary.advisory_id.split("/")[-1]
         filtered_aliases = [alias for alias in group.aliases if alias.alias != identifier]
 
+        ssvc_trees = []
+
+        if include_ssvc_trees:
+
+            all_advs = [group.primary] + list(group.secondaries)
+
+            advisories_qs = AdvisoryV2.objects.filter(
+                id__in=[adv.id for adv in all_advs]
+            ).prefetch_related(
+                Prefetch(
+                    "related_ssvcs",
+                    queryset=SSVC.objects.select_related("source_advisory")
+                    .only("id", "vector", "decision", "options", "source_advisory__url")
+                    .distinct(),
+                    to_attr="ssvc_trees",
+                )
+            )
+
+            ssvc_trees = [
+                {
+                    "vector": ssvc.vector,
+                    "decision": ssvc.decision,
+                    "options": ssvc.options,
+                    "url": ssvc.source_advisory.url if ssvc.source_advisory else None,
+                }
+                for adv in advisories_qs
+                for ssvc in adv.ssvc_trees
+            ]
+
         advisories.append(
             GroupedAdvisory(
                 aliases=filtered_aliases,
@@ -1024,19 +1036,9 @@ def get_advisories_from_groups(groups):
                 weighted_severity=weighted_severity,
                 exploitability=exploitability,
                 risk_score=risk_score,
+                ssvc_trees=ssvc_trees or [],
             )
         )
-
-    return advisories
-
-
-def merge_and_save_grouped_advisories(package, advisories, relation):
-    """
-    Merge advisories based on their content and identifiers and save the merged advisories to the database.
-    """
-    groups = merge_advisories(advisories, package)
-    delete_and_save_advisory_set(groups, package, relation)
-    advisories = get_advisories_from_groups(groups)
 
     return advisories
 
