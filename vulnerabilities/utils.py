@@ -1055,3 +1055,31 @@ TYPES_WITH_MULTIPLE_IMPORTERS = [
     "gem",
     "conan",
 ]
+
+
+def relate_aliases_with_advisories(aliases):
+    from vulnerabilities.models import AdvisoryAlias
+    from vulnerabilities.models import AdvisoryV2
+
+    aliases = set(aliases)
+
+    found_aliases = AdvisoryAlias.objects.filter(alias__in=aliases).prefetch_related("advisories")
+
+    found_alias_values = set(found_aliases.values_list("alias", flat=True))
+
+    alias_advisories = AdvisoryV2.objects.filter(
+        aliases__alias__in=found_alias_values,
+        is_latest=True,
+        _all_impacts_unfurled_at__isnull=False,
+    ).distinct()
+
+    missing_aliases = aliases - found_alias_values
+
+    advisory_id_advisories = AdvisoryV2.objects.filter(
+        advisory_id__in=missing_aliases,
+        _all_impacts_unfurled_at__isnull=False,
+    ).latest_per_avid()
+
+    advisories = set(alias_advisories)
+    advisories.update(advisory_id_advisories)
+    return advisories

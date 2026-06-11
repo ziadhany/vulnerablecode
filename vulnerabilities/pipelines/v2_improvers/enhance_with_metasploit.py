@@ -19,6 +19,7 @@ from vulnerabilities.models import AdvisoryAlias
 from vulnerabilities.models import AdvisoryExploit
 from vulnerabilities.models import AdvisoryV2
 from vulnerabilities.pipelines import VulnerableCodePipeline
+from vulnerabilities.utils import relate_aliases_with_advisories
 
 
 class MetasploitImproverPipeline(VulnerableCodePipeline):
@@ -77,17 +78,9 @@ def add_advisory_exploit(record, logger):
     if not interesting_references:
         return 0
 
-    for ref in interesting_references:
-        try:
-            if alias := AdvisoryAlias.objects.get(alias=ref):
-                for adv in alias.advisories.all():
-                    advisories.add(adv)
-            else:
-                advs = AdvisoryV2.objects.filter(advisory_id=ref).latest_per_avid()
-                for adv in advs:
-                    advisories.add(adv)
-        except AdvisoryAlias.DoesNotExist:
-            continue
+    advisories = []
+
+    advisories = relate_aliases_with_advisories(interesting_references)
 
     if not advisories:
         logger(f"No advisories found for aliases {interesting_references}")

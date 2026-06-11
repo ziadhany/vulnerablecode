@@ -17,6 +17,7 @@ from vulnerabilities.models import AdvisoryAlias
 from vulnerabilities.models import AdvisoryExploit
 from vulnerabilities.models import AdvisoryV2
 from vulnerabilities.pipelines import VulnerableCodePipeline
+from vulnerabilities.utils import relate_aliases_with_advisories
 
 
 class VulnerabilityKevPipeline(VulnerableCodePipeline):
@@ -72,18 +73,7 @@ def add_vulnerability_exploit(kev_vul, logger):
     if not cve_id:
         return 0
 
-    advisories = set()
-    try:
-        if alias := AdvisoryAlias.objects.get(alias=cve_id):
-            for adv in alias.advisories.all():
-                advisories.add(adv)
-        else:
-            advs = AdvisoryV2.objects.filter(advisory_id=cve_id).latest_per_avid()
-            for adv in advs:
-                advisories.add(adv)
-    except AdvisoryAlias.DoesNotExist:
-        logger(f"No advisory found for aliases {cve_id}")
-        return 0
+    advisories = relate_aliases_with_advisories([cve_id])
 
     for advisory in advisories:
         AdvisoryExploit.objects.update_or_create(
