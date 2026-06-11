@@ -944,7 +944,7 @@ class AdvisoryPackagesDetails(VulnerableCodeDetailView):
 class AdvisoryPackageCommitPatchDetails(DetailView):
     """
     View to display all packages introduce by or fixing a specific vulnerability.
-    URL: /advisories/{id}/commits
+    URL: /advisories/commits/{id}
     """
 
     model = models.AdvisoryV2

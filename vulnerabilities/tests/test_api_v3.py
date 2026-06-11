@@ -16,6 +16,12 @@ from rest_framework.test import APITestCase
 from univers.version_range import PypiVersionRange
 
 from vulnerabilities.importer import AdvisoryDataV2
+from vulnerabilities.importer import AffectedPackageV2
+from vulnerabilities.importer import PackageCommitPatchData
+from vulnerabilities.models import AdvisorySet
+from vulnerabilities.models import AdvisorySetMember
+from vulnerabilities.models import ImpactedPackage
+from vulnerabilities.models import ImpactedPackageAffecting
 from vulnerabilities.models import PackageV2
 from vulnerabilities.pipes.advisory import insert_advisory_v2
 from vulnerabilities.tests.pipelines import TestLogger
@@ -254,3 +260,84 @@ class APIV3TestCaseOneAdvisoryMultiplePackages(APITestCase):
         results = response.data["results"]
         self.assertEqual(len(results), 100)
         self.assertIn("next", response.data)
+
+
+class PackageCommitPatchTests(APITestCase):
+    def setUp(self):
+        self.advisory = AdvisoryDataV2(
+            advisory_id="AVID-123",
+            aliases=[],
+            affected_packages=[
+                AffectedPackageV2(
+                    package=PackageURL(type="pypi", name="sample"),
+                    affected_version_range=PypiVersionRange.from_string("vers:pypi/=1.0.0"),
+                    introduced_by_commit_patches=[
+                        PackageCommitPatchData(
+                            vcs_url="https://github.com/aboutcode-org/sample",
+                            commit_hash="06580c7f99c6fde7bcf18e30bdcc61f081430957",
+                        )
+                    ],
+                    fixed_by_commit_patches=[
+                        PackageCommitPatchData(
+                            vcs_url="https://github.com/aboutcode-org/sample",
+                            commit_hash="98e516011d6e096e25247b82fc5f196bbeecff10",
+                        )
+                    ],
+                )
+            ],
+            url="https://github.com/aboutcode-org/sample",
+        )
+
+        self.advisory = insert_advisory_v2(self.advisory, "importer_1", print, 100)
+        self.advisory.is_latest = True
+        self.advisory._all_impacts_unfurled_at = timezone.now()
+        self.advisory.save()
+        self.package, _ = PackageV2.objects.get_or_create(
+            package_url="pkg:pypi/sample@1.0.0",
+            defaults={"name": "sample", "type": "pypi", "version": "1.0.0"},
+        )
+
+        impacted_package = ImpactedPackage.objects.get(advisory=self.advisory)
+        ImpactedPackageAffecting.objects.get_or_create(
+            package=self.package,
+            impacted_package=impacted_package,
+        )
+        adv_set = AdvisorySet.objects.create(
+            package=self.package, primary_advisory=self.advisory, relation_type="affecting"
+        )
+        AdvisorySetMember.objects.create(advisory_set=adv_set, advisory=self.advisory)
+
+        self.client = APIClient(enforce_csrf_checks=True)
+
+    def test_packages_commit_patch(self):
+        url = reverse("package-v3-list")
+        response = self.client.post(
+            url,
+            data={"purls": ["pkg:pypi/sample@1.0.0"], "details": True},
+            format="json",
+        )
+
+        assert response.status_code == 200
+        results = response.data["results"]
+        assert len(results) == 1
+        pkg = results[0]
+        assert pkg["purl"] == "pkg:pypi/sample@1.0.0"
+
+        vulns = pkg.get("affected_by_vulnerabilities", [])
+        assert len(vulns) == 1
+        advisory_data = vulns[0]
+
+        assert advisory_data["advisory_id"] == "AVID-123"
+        assert advisory_data["introduced_in_patch"] == [
+            {
+                "commit_hash": "06580c7f99c6fde7bcf18e30bdcc61f081430957",
+                "vcs_url": "https://github.com/aboutcode-org/sample",
+            }
+        ]
+
+        assert advisory_data["fixed_in_patch"] == [
+            {
+                "commit_hash": "98e516011d6e096e25247b82fc5f196bbeecff10",
+                "vcs_url": "https://github.com/aboutcode-org/sample",
+            }
+        ]

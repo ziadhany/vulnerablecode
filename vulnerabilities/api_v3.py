@@ -11,11 +11,13 @@ from collections import defaultdict
 from urllib.parse import urlencode
 
 from django.contrib.postgres.aggregates import ArrayAgg
+from django.contrib.postgres.aggregates import JSONBAgg
 from django.db.models import Exists
 from django.db.models import Max
 from django.db.models import OuterRef
 from django.db.models import Prefetch
 from django.db.models import Q
+from django.db.models.functions import JSONObject
 from django_filters import rest_framework as filters
 from drf_spectacular.utils import extend_schema
 from packageurl import PackageURL
@@ -479,7 +481,23 @@ def get_affected_advisories_bulk(packages, max_advisories, base_url):
                 "impacted_package__fixed_by_packages__package_url",
                 distinct=True,
                 filter=Q(impacted_package__fixed_by_packages__package_url__isnull=False),
-            )
+            ),
+            introduced_patches=JSONBAgg(
+                JSONObject(
+                    commit_hash="impacted_package__introduced_by_package_commit_patches__commit_hash",
+                    vcs_url="impacted_package__introduced_by_package_commit_patches__vcs_url",
+                ),
+                distinct=True,
+                filter=Q(impacted_package__introduced_by_package_commit_patches__isnull=False),
+            ),
+            fixed_patches=JSONBAgg(
+                JSONObject(
+                    commit_hash="impacted_package__fixed_by_package_commit_patches__commit_hash",
+                    vcs_url="impacted_package__fixed_by_package_commit_patches__vcs_url",
+                ),
+                distinct=True,
+                filter=Q(impacted_package__fixed_by_package_commit_patches__isnull=False),
+            ),
         )
     )
 
@@ -489,6 +507,20 @@ def get_affected_advisories_bulk(packages, max_advisories, base_url):
             row["impacted_package__advisory_id"],
         ): row["fixed_by_packages"]
         or []
+        for row in impacts
+    }
+
+    introduced_patches_map = {
+        (row["package_id"], row["impacted_package__advisory_id"]): [
+            p for p in (row["introduced_patches"] or []) if p and p.get("commit_hash")
+        ]
+        for row in impacts
+    }
+
+    fixed_patches_map = {
+        (row["package_id"], row["impacted_package__advisory_id"]): [
+            p for p in (row["fixed_patches"] or []) if p and p.get("commit_hash")
+        ]
         for row in impacts
     }
 
@@ -647,6 +679,8 @@ def get_affected_advisories_bulk(packages, max_advisories, base_url):
                     "exploitability": exploitability,
                     "risk_score": risk_score,
                     "fixed_by_packages": fixed_by_packages,
+                    "introduced_in_patch": introduced_patches_map.get((package.id, primary.id), []),
+                    "fixed_in_patch": fixed_patches_map.get((package.id, primary.id), []),
                     "ssvc_trees": adv.ssvc_trees,
                     "resource_url": resource_url,
                 }
@@ -742,6 +776,10 @@ def get_affected_advisories_bulk(packages, max_advisories, base_url):
                     "exploitability": advisory.exploitability,
                     "risk_score": advisory.risk_score,
                     "fixed_by_packages": fixed_by_packages,
+                    "introduced_in_patch": introduced_patches_map.get(
+                        (package.id, advisory_id), []
+                    ),
+                    "fixed_in_patch": fixed_patches_map.get((package.id, advisory_id), []),
                     "ssvc_trees": [
                         {
                             "vector": ssvc.vector,
