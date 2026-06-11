@@ -3790,9 +3790,25 @@ class PackageV2(PackageURLMixin):
         if self.version_rank == 0:
             self.calculate_version_rank
 
+        evaluated = Exists(
+            ImpactedPackageFixedBy.objects.filter(
+                package_id=OuterRef("pk"),
+                impacted_package__advisory__is_latest=True,
+                impacted_package__advisory___all_impacts_unfurled_at__isnull=False,
+            )
+        )
+        vulnerable = Exists(
+            ImpactedPackageAffecting.objects.filter(
+                package_id=OuterRef("pk"),
+                impacted_package__advisory__is_latest=True,
+                impacted_package__advisory___all_impacts_unfurled_at__isnull=False,
+            )
+        )
+
         qs = (
             PackageV2.objects.get_fixed_by_package_versions(self, fix=False)
-            .only_non_vulnerable()
+            .annotate(evaluated=evaluated, vulnerable=vulnerable)
+            .filter(evaluated=True, vulnerable=False)
             .filter(version_rank__gt=self.version_rank)
             .order_by("version_rank")
         )
