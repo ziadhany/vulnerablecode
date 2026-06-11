@@ -3583,9 +3583,6 @@ class PackageQuerySetV2(BaseQuerySet, PackageURLQuerySet):
     def only_vulnerable(self):
         return self._vulnerable()
 
-    def only_non_vulnerable(self):
-        return self._not_vulnerable().filter(is_ghost=False)
-
     def for_purl(self, purl):
         """
         Return a queryset matching the ``purl`` Package URL.
@@ -3617,20 +3614,6 @@ class PackageQuerySetV2(BaseQuerySet, PackageURLQuerySet):
         return self.annotate(
             is_vulnerable=Exists(
                 ImpactedPackageAffecting.objects.filter(
-                    package__pk=OuterRef("pk"),
-                    impacted_package__advisory__is_latest=True,
-                    impacted_package__advisory___all_impacts_unfurled_at__isnull=False,
-                )
-            )
-        )
-
-    def with_is_not_vulnerable(self):
-        """
-        Annotate Package with ``is_not_vulnerable`` boolean attribute.
-        """
-        return self.annotate(
-            is_not_vulnerable=Exists(
-                ImpactedPackageFixedBy.objects.filter(
                     package__pk=OuterRef("pk"),
                     impacted_package__advisory__is_latest=True,
                     impacted_package__advisory___all_impacts_unfurled_at__isnull=False,
@@ -3808,7 +3791,7 @@ class PackageV2(PackageURLMixin):
         qs = (
             PackageV2.objects.get_fixed_by_package_versions(self, fix=False)
             .annotate(evaluated=evaluated, vulnerable=vulnerable)
-            .filter(evaluated=True, vulnerable=False)
+            .filter(evaluated=True, vulnerable=False, is_ghost=False)
             .filter(version_rank__gt=self.version_rank)
             .order_by("version_rank")
         )
