@@ -10,10 +10,10 @@
 from datetime import datetime
 from datetime import timedelta
 
+import pytest
 from django.test import TestCase
 from fetchcode.package_versions import PackageVersion
 from packageurl import PackageURL
-import pytest
 from univers.version_constraint import VersionConstraint
 from univers.version_range import GemVersionRange
 from univers.version_range import VersionRange
@@ -25,15 +25,17 @@ from vulnerabilities.importer import AffectedPackageV2
 from vulnerabilities.importer import PackageCommitPatchData
 from vulnerabilities.importer import PatchData
 from vulnerabilities.importer import VulnerabilitySeverity
-from vulnerabilities.models import AdvisoryAlias, AdvisoryV2
+from vulnerabilities.models import AdvisoryAlias
+from vulnerabilities.models import AdvisoryV2
 from vulnerabilities.pipelines import insert_advisory_v2
 from vulnerabilities.references import XsaReferenceV2
 from vulnerabilities.references import ZbxReferenceV2
 from vulnerabilities.tests.pipelines import TestLogger
-from vulnerabilities.utils import AffectedPackage, relate_aliases_with_advisories
+from vulnerabilities.utils import AffectedPackage
 from vulnerabilities.utils import get_item
 from vulnerabilities.utils import get_severity_range
 from vulnerabilities.utils import nearest_patched_package
+from vulnerabilities.utils import relate_aliases_with_advisories
 from vulnerabilities.utils import resolve_version_range
 from vulnerabilities.utils import split_markdown_front_matter
 
@@ -332,9 +334,7 @@ def test_handles_mixed_aliases_and_advisory_ids():
     alias = AdvisoryAlias.objects.create(alias="CVE-2025-1")
     alias.advisories.add(alias_adv)
 
-    result = relate_aliases_with_advisories(
-        ["CVE-2025-1", "GHSA-2"]
-    )
+    result = relate_aliases_with_advisories(["CVE-2025-1", "GHSA-2"])
 
     assert result == {alias_adv, advisory_id_adv}
 
@@ -411,8 +411,6 @@ def test_deduplicates_results():
     alias1.advisories.add(advisory)
     alias2.advisories.add(advisory)
 
-    result = relate_aliases_with_advisories(
-        ["CVE-1", "CVE-2"]
-    )
+    result = relate_aliases_with_advisories(["CVE-1", "CVE-2"])
 
     assert result == {advisory}

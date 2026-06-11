@@ -46,6 +46,8 @@ def test_kev_improver(mock_get):
         unique_content_id="i3giu",
         url="https://test.com",
         date_collected=datetime.now(),
+        is_latest=True,
+        _all_impacts_unfurled_at=datetime.now(),
     )
     adv1.save()
 

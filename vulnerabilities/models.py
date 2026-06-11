@@ -3959,9 +3959,24 @@ class AdvisoryExploit(models.Model):
         help_text="The URL to the exploit as provided in the original upstream data source.",
     )
 
+    record_id = models.CharField(
+        null=True,
+        blank=True,
+        max_length=255,
+        help_text="The unique identifier for the exploit record in the original upstream data source, such as the CISA KEV ID or the exploitdb ID.",
+    )
+
     @property
     def get_known_ransomware_campaign_use_type(self):
         return "Known" if self.known_ransomware_campaign_use else "Unknown"
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["advisory", "data_source", "record_id"],
+                name="unique_advisory_exploit_source",
+            )
+        ]
 
 
 class SSVC(models.Model):
