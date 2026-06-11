@@ -20,7 +20,7 @@ In **API v3**, all these capabilities are consolidated into a **single endpoint*
 Pagination
 ----------
 
-Responses from the package endpoint are **always paginated**, with **10 results per page**.
+Responses from the package endpoint are **always paginated**, with **100 results per page**.
 
 Each response includes:
 
@@ -219,7 +219,7 @@ Retrieve advisories for one or more PURLs:
         "purls": ["pkg:npm/atob@2.0.3", "pkg:pypi/sample@2.0.0"]
     }
 
-Responses are paginated (10 results per page) and include ``next`` and ``previous`` links.
+Responses are paginated (100 results per page) and include ``next`` and ``previous`` links.
 
 
 Affected-By Advisories Endpoint
