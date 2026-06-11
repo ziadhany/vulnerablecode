@@ -15,11 +15,9 @@ import saneyaml
 from aboutcode.pipeline import LoopProgress
 from dateutil import parser as dateparser
 
-from vulnerabilities.models import AdvisoryAlias
 from vulnerabilities.models import AdvisoryExploit
-from vulnerabilities.models import AdvisoryV2
 from vulnerabilities.pipelines import VulnerableCodePipeline
-from vulnerabilities.utils import relate_aliases_with_advisories
+from vulnerabilities.utils import build_alias_to_advisory_map
 
 
 class MetasploitImproverPipeline(VulnerableCodePipeline):
@@ -56,64 +54,89 @@ class MetasploitImproverPipeline(VulnerableCodePipeline):
     def add_advisory_exploits(self):
         fetched_exploit_count = len(self.metasploit_data)
         self.log(f"Enhancing the vulnerability with {fetched_exploit_count:,d} exploit records")
-
-        vulnerability_exploit_count = 0
         progress = LoopProgress(total_iterations=fetched_exploit_count, logger=self.log)
-        for _, record in progress.iter(self.metasploit_data.items()):
-            vulnerability_exploit_count += add_advisory_exploit(
-                record=record,
-                logger=self.log,
-            )
-        self.log(f"Successfully added {vulnerability_exploit_count:,d} vulnerability exploit")
 
+        all_references = set()
 
-def add_advisory_exploit(record, logger):
-    advisories = set()
-    references = record.get("references", [])
+        for record in self.metasploit_data.values():
+            for ref in record.get("references", []):
+                if not ref.startswith("OSVDB") and not ref.startswith("URL-"):
+                    all_references.add(ref)
 
-    interesting_references = [
-        ref for ref in references if not ref.startswith("OSVDB") and not ref.startswith("URL-")
-    ]
+        reference_to_advisories = build_alias_to_advisory_map(all_references)
 
-    if not interesting_references:
-        return 0
+        exploits = []
+        seen = set()
 
-    advisories = []
+        for record in progress.iter(self.metasploit_data.values()):
+            description = record.get("description", "")
+            notes = record.get("notes", {})
+            platform = record.get("platform")
 
-    advisories = relate_aliases_with_advisories(interesting_references)
+            source_url = ""
+            if path := record.get("path"):
+                source_url = f"https://github.com/rapid7/metasploit-framework/tree/master{path}"
+            source_date_published = None
 
-    if not advisories:
-        logger(f"No advisories found for aliases {interesting_references}")
-        return 0
+            if disclosure_date := record.get("disclosure_date"):
+                try:
+                    source_date_published = dateparser.parse(disclosure_date).date()
+                except ValueError as e:
+                    self.log(
+                        f"Error while parsing date {disclosure_date} with error {e!r}:\n{traceback_format_exc()}",
+                        level=logging.ERROR,
+                    )
+            refs = [
+                ref
+                for ref in record.get("references", [])
+                if not ref.startswith("OSVDB") and not ref.startswith("URL-")
+            ]
 
-    description = record.get("description", "")
-    notes = record.get("notes", {})
-    platform = record.get("platform")
+            record_id = record.get("path")
 
-    source_url = ""
-    if path := record.get("path"):
-        source_url = f"https://github.com/rapid7/metasploit-framework/tree/master{path}"
-    source_date_published = None
+            if not record_id:
+                continue
 
-    if disclosure_date := record.get("disclosure_date"):
-        try:
-            source_date_published = dateparser.parse(disclosure_date).date()
-        except ValueError as e:
-            logger(
-                f"Error while parsing date {disclosure_date} with error {e!r}:\n{traceback_format_exc()}",
-                level=logging.ERROR,
-            )
+            for ref in refs:
+                for advisory in reference_to_advisories.get(ref, ()):
 
-    for advisory in advisories:
-        AdvisoryExploit.objects.update_or_create(
-            advisory=advisory,
-            data_source="Metasploit",
-            defaults={
-                "description": description,
-                "notes": saneyaml.dump(notes),
-                "source_date_published": source_date_published,
-                "platform": platform,
-                "source_url": source_url,
-            },
+                    key = (
+                        advisory.id,
+                        record_id,
+                    )
+
+                    if key in seen:
+                        continue
+
+                    seen.add(key)
+
+                    exploits.append(
+                        AdvisoryExploit(
+                            advisory=advisory,
+                            data_source="Metasploit",
+                            record_id=record_id,
+                            description=description,
+                            notes=saneyaml.dump(notes),
+                            source_date_published=source_date_published,
+                            platform=platform,
+                            source_url=source_url,
+                        )
+                    )
+
+        AdvisoryExploit.objects.bulk_create(
+            exploits,
+            update_conflicts=True,
+            unique_fields=[
+                "advisory",
+                "data_source",
+                "record_id",
+            ],
+            update_fields=[
+                "description",
+                "notes",
+                "source_date_published",
+                "platform",
+                "source_url",
+            ],
+            batch_size=1000,
         )
-    return 1

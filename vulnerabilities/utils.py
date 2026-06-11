@@ -1083,3 +1083,34 @@ def relate_aliases_with_advisories(aliases):
     advisories = set(alias_advisories)
     advisories.update(advisory_id_advisories)
     return advisories
+
+
+def build_alias_to_advisory_map(aliases_strs):
+    from vulnerabilities.models import AdvisoryAlias
+    from vulnerabilities.models import AdvisoryV2
+
+    aliases_strs = set(aliases_strs)
+    alias_to_advisories = defaultdict(set)
+
+    advisory_aliases = AdvisoryAlias.objects.filter(alias__in=aliases_strs).prefetch_related(
+        Prefetch(
+            "advisories",
+            queryset=AdvisoryV2.objects.filter(
+                is_latest=True,
+                _all_impacts_unfurled_at__isnull=False,
+            ),
+            to_attr="latest_advisories",
+        )
+    )
+
+    for alias in advisory_aliases:
+        for advisory in alias.latest_advisories:
+            alias_to_advisories[alias.alias].add(advisory)
+
+    for advisory in AdvisoryV2.objects.filter(
+        advisory_id__in=aliases_strs,
+        _all_impacts_unfurled_at__isnull=False,
+        is_latest=True,
+    ):
+        alias_to_advisories[advisory.advisory_id].add(advisory)
+    return alias_to_advisories
