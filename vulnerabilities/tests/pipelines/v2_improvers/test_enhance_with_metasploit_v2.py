@@ -49,6 +49,8 @@ def test_metasploit_improver(mock_get):
         unique_content_id="i3giu",
         url="https://test.com",
         date_collected=datetime.now(),
+        _all_impacts_unfurled_at=datetime.now(),
+        is_latest=True,
     )
     alias = AdvisoryAlias.objects.create(alias="CVE-2007-4387")
 
