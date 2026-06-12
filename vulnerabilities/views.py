@@ -977,13 +977,13 @@ class AdvisoryPackageCommitPatchDetails(DetailView):
                         Prefetch(
                             "introduced_by_package_commit_patches",
                             queryset=models.PackageCommitPatch.objects.only(
-                                "commit_hash", "vcs_url", "patch_url", "commit_url"
+                                "id", "commit_hash", "vcs_url"
                             ),
                         ),
                         Prefetch(
                             "fixed_by_package_commit_patches",
                             queryset=models.PackageCommitPatch.objects.only(
-                                "commit_hash", "vcs_url", "patch_url", "commit_url"
+                                "id", "commit_hash", "vcs_url"
                             ),
                         ),
                     ),
