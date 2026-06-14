@@ -313,7 +313,7 @@ class PackageCommitPatchTests(APITestCase):
         url = reverse("package-v3-list")
         response = self.client.post(
             url,
-            data={"purls": ["pkg:pypi/sample@1.0.0"], "details": True},
+            data={"purls": ["pkg:pypi/sample@1.0.0"], "details": True, "reachability": True},
             format="json",
         )
 
