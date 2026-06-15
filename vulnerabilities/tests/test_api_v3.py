@@ -7,6 +7,8 @@
 # See https://aboutcode.org for more information about nexB OSS projects.
 #
 
+from unittest.mock import patch
+
 from django.urls import reverse
 from django.utils import timezone
 from packageurl import PackageURL
@@ -341,3 +343,139 @@ class PackageCommitPatchTests(APITestCase):
                 "vcs_url": "https://github.com/aboutcode-org/sample",
             }
         ]
+
+
+class PackageCommitPatchComplexTest(APITestCase):
+    def setUp(self):
+        self.package, _ = PackageV2.objects.get_or_create(
+            package_url="pkg:pypi/sample@1.0.0",
+            defaults={"name": "sample", "type": "pypi", "version": "1.0.0"},
+        )
+
+        self.advisory_data = AdvisoryDataV2(
+            advisory_id="AVID-123",
+            aliases=[],
+            affected_packages=[
+                AffectedPackageV2(
+                    package=PackageURL(type="pypi", name="sample"),
+                    affected_version_range=PypiVersionRange.from_string("vers:pypi/=1.0.0"),
+                    introduced_by_commit_patches=[
+                        PackageCommitPatchData(
+                            vcs_url="https://github.com/aboutcode-org/sample",
+                            commit_hash="06580c7f99c6fde7bcf18e30bdcc61f081430957",
+                        )
+                    ],
+                    fixed_by_commit_patches=[
+                        PackageCommitPatchData(
+                            vcs_url="https://github.com/aboutcode-org/sample",
+                            commit_hash="98e516011d6e096e25247b82fc5f196bbeecff10",
+                        )
+                    ],
+                )
+            ],
+            url="https://github.com/aboutcode-org/sample",
+        )
+
+        self.advisory = insert_advisory_v2(self.advisory_data, "importer_1", print, 100)
+        self.advisory.is_latest = True
+        self.advisory._all_impacts_unfurled_at = timezone.now()
+        self.advisory.save()
+
+        impacted_package = ImpactedPackage.objects.get(advisory=self.advisory)
+        ImpactedPackageAffecting.objects.get_or_create(
+            package=self.package,
+            impacted_package=impacted_package,
+        )
+
+        self.adv_set = AdvisorySet.objects.create(
+            package=self.package, primary_advisory=self.advisory, relation_type="affecting"
+        )
+        AdvisorySetMember.objects.create(advisory_set=self.adv_set, advisory=self.advisory)
+
+        self.member_advisory_data = AdvisoryDataV2(
+            advisory_id="AVID-456",
+            aliases=[],
+            affected_packages=[
+                AffectedPackageV2(
+                    package=PackageURL(type="pypi", name="sample"),
+                    affected_version_range=PypiVersionRange.from_string("vers:pypi/=1.0.0"),
+                    introduced_by_commit_patches=[
+                        PackageCommitPatchData(
+                            vcs_url="https://github.com/aboutcode-org/sample",
+                            commit_hash="98e516011d6e096e25247b82fc5f196bbeecff10",
+                        )
+                    ],
+                    fixed_by_commit_patches=[
+                        PackageCommitPatchData(
+                            vcs_url="https://github.com/aboutcode-org/sample",
+                            commit_hash="2fc5f196bbeecff1098e516011d6e096e25247b8",
+                        )
+                    ],
+                )
+            ],
+            url="https://github.com/aboutcode-org/sample-member",
+        )
+
+        self.member_advisory = insert_advisory_v2(
+            self.member_advisory_data, "importer_1", print, 100
+        )
+        self.member_advisory.is_latest = True
+        self.member_advisory._all_impacts_unfurled_at = timezone.now()
+        self.member_advisory.save()
+
+        member_impacted_package = ImpactedPackage.objects.get(advisory=self.member_advisory)
+        ImpactedPackageAffecting.objects.get_or_create(
+            package=self.package,
+            impacted_package=member_impacted_package,
+        )
+
+        AdvisorySetMember.objects.create(advisory_set=self.adv_set, advisory=self.member_advisory)
+        self.client = APIClient(enforce_csrf_checks=True)
+
+    def test_packages_commit_patch(self):
+        url = reverse("package-v3-list")
+        response = self.client.post(
+            url,
+            data={"purls": ["pkg:pypi/sample@1.0.0"], "details": True, "reachability": True},
+            format="json",
+        )
+
+        assert response.status_code == 200
+        results = response.data["results"]
+        pkg = results[0]
+        vulns = pkg.get("affected_by_vulnerabilities", [])
+        advisory_data = vulns[0]
+
+        assert advisory_data["advisory_id"] == "AVID-123"
+        assert {
+            "commit_hash": "06580c7f99c6fde7bcf18e30bdcc61f081430957",
+            "vcs_url": "https://github.com/aboutcode-org/sample",
+        } in advisory_data["introduced_in_patch"]
+
+    def test_advisory_set_member_patches_aggregation(self):
+        url = reverse("package-v3-list")
+
+        with patch("vulnerabilities.views.TYPES_WITH_MULTIPLE_IMPORTERS", ["pypi"]):
+            response = self.client.post(
+                url,
+                data={"purls": ["pkg:pypi/sample@1.0.0"], "details": True, "reachability": True},
+                format="json",
+            )
+
+        assert response.status_code == 200
+        results = response.data["results"]
+        assert len(results) == 1
+
+        pkg = results[0]
+        vulns = pkg.get("affected_by_vulnerabilities", [])
+        assert len(vulns) == 1
+        advisory_data = vulns[0]
+        assert advisory_data["advisory_id"] == "AVID-123"
+
+        introduced_hashes = [patch["commit_hash"] for patch in advisory_data["introduced_in_patch"]]
+        assert "06580c7f99c6fde7bcf18e30bdcc61f081430957" in introduced_hashes
+        assert "98e516011d6e096e25247b82fc5f196bbeecff10" in introduced_hashes
+
+        fixed_hashes = [patch["commit_hash"] for patch in advisory_data["fixed_in_patch"]]
+        assert "98e516011d6e096e25247b82fc5f196bbeecff10" in fixed_hashes
+        assert "2fc5f196bbeecff1098e516011d6e096e25247b8" in fixed_hashes
