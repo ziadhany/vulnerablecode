@@ -330,14 +330,14 @@ class PackageCommitPatchTests(APITestCase):
         advisory_data = vulns[0]
 
         assert advisory_data["advisory_id"] == "AVID-123"
-        assert advisory_data["introduced_in_patch"] == [
+        assert advisory_data["introduced_in_patches"] == [
             {
                 "commit_hash": "06580c7f99c6fde7bcf18e30bdcc61f081430957",
                 "vcs_url": "https://github.com/aboutcode-org/sample",
             }
         ]
 
-        assert advisory_data["fixed_in_patch"] == [
+        assert advisory_data["fixed_in_patches"] == [
             {
                 "commit_hash": "98e516011d6e096e25247b82fc5f196bbeecff10",
                 "vcs_url": "https://github.com/aboutcode-org/sample",
@@ -450,7 +450,7 @@ class PackageCommitPatchComplexTest(APITestCase):
         assert {
             "commit_hash": "06580c7f99c6fde7bcf18e30bdcc61f081430957",
             "vcs_url": "https://github.com/aboutcode-org/sample",
-        } in advisory_data["introduced_in_patch"]
+        } in advisory_data["introduced_in_patches"]
 
     def test_advisory_set_member_patches_aggregation(self):
         url = reverse("package-v3-list")
@@ -472,10 +472,12 @@ class PackageCommitPatchComplexTest(APITestCase):
         advisory_data = vulns[0]
         assert advisory_data["advisory_id"] == "AVID-123"
 
-        introduced_hashes = [patch["commit_hash"] for patch in advisory_data["introduced_in_patch"]]
+        introduced_hashes = [
+            patch["commit_hash"] for patch in advisory_data["introduced_in_patches"]
+        ]
         assert "06580c7f99c6fde7bcf18e30bdcc61f081430957" in introduced_hashes
         assert "98e516011d6e096e25247b82fc5f196bbeecff10" in introduced_hashes
 
-        fixed_hashes = [patch["commit_hash"] for patch in advisory_data["fixed_in_patch"]]
+        fixed_hashes = [patch["commit_hash"] for patch in advisory_data["fixed_in_patches"]]
         assert "98e516011d6e096e25247b82fc5f196bbeecff10" in fixed_hashes
         assert "2fc5f196bbeecff1098e516011d6e096e25247b8" in fixed_hashes

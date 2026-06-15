@@ -761,11 +761,11 @@ def get_affected_advisories_bulk(packages, max_advisories, base_url, reachabilit
                     "exploitability": exploitability,
                     "risk_score": risk_score,
                     "fixed_by_packages": fixed_by_packages,
-                    "introduced_in_patch": introduced_patches_by_set.get(
+                    "introduced_in_patches": introduced_patches_by_set.get(
                         adv.id,
                         [],
                     ),
-                    "fixed_in_patch": fixed_patches_by_set.get(
+                    "fixed_in_patches": fixed_patches_by_set.get(
                         adv.id,
                         [],
                     ),
@@ -864,8 +864,8 @@ def get_affected_advisories_bulk(packages, max_advisories, base_url, reachabilit
                     "exploitability": advisory.exploitability,
                     "risk_score": advisory.risk_score,
                     "fixed_by_packages": fixed_by_packages,
-                    "introduced_in_patch": introduced_patches_by_set.get(advisory_id, []),
-                    "fixed_in_patch": introduced_patches_by_set.get(advisory_id, []),
+                    "introduced_in_patches": introduced_patches_by_set.get(advisory_id, []),
+                    "fixed_in_patches": introduced_patches_by_set.get(advisory_id, []),
                     "ssvc_trees": [
                         {
                             "vector": ssvc.vector,
