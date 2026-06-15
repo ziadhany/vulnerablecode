@@ -11,14 +11,12 @@ from collections import defaultdict
 from urllib.parse import urlencode
 
 from django.contrib.postgres.aggregates import ArrayAgg
-from django.contrib.postgres.aggregates import JSONBAgg
 from django.db.models import Exists
 from django.db.models import F
 from django.db.models import Max
 from django.db.models import OuterRef
 from django.db.models import Prefetch
 from django.db.models import Q
-from django.db.models.functions import JSONObject
 from django_filters import rest_framework as filters
 from drf_spectacular.utils import extend_schema
 from packageurl import PackageURL
@@ -458,71 +456,94 @@ class AffectedByAdvisoriesViewSet(PackageAdvisoriesViewSet):
 
 def get_patches_bulk(package_ids, advisory_ids):
     """Get introduced and fixed patches"""
-    patches_query = (
-        ImpactedPackageAffecting.objects.filter(
-            package_id__in=package_ids,
-            impacted_package__advisory_id__in=advisory_ids,
-            impacted_package__advisory__is_latest=True,
-            impacted_package__advisory___all_impacts_unfurled_at__isnull=False,
-        )
-        .filter(
-            Q(impacted_package__introduced_by_package_commit_patches__isnull=False)
-            | Q(impacted_package__fixed_by_package_commit_patches__isnull=False)
-        )
-        .values(
-            "package_id",
-            "impacted_package__advisory_id",
-            introduced_commit_hash=F(
-                "impacted_package__introduced_by_package_commit_patches__commit_hash"
-            ),
-            introduced_vcs_url=F("impacted_package__introduced_by_package_commit_patches__vcs_url"),
-            fixed_commit_hash=F("impacted_package__fixed_by_package_commit_patches__commit_hash"),
-            fixed_vcs_url=F("impacted_package__fixed_by_package_commit_patches__vcs_url"),
-        )
-        .distinct()
-        .order_by()
+
+    base_qs = ImpactedPackageAffecting.objects.filter(
+        package_id__in=package_ids,
+        impacted_package__advisory_id__in=advisory_ids,
+        impacted_package__advisory__is_latest=True,
+        impacted_package__advisory___all_impacts_unfurled_at__isnull=False,
+    )
+
+    introduced_rows = base_qs.filter(
+        impacted_package__introduced_by_package_commit_patches__isnull=False
+    ).values(
+        "package_id",
+        "impacted_package__advisory_id",
+        commit_hash=F("impacted_package__introduced_by_package_commit_patches__commit_hash"),
+        vcs_url=F("impacted_package__introduced_by_package_commit_patches__vcs_url"),
+    )
+
+    fixed_rows = base_qs.filter(
+        impacted_package__fixed_by_package_commit_patches__isnull=False
+    ).values(
+        "package_id",
+        "impacted_package__advisory_id",
+        commit_hash=F("impacted_package__fixed_by_package_commit_patches__commit_hash"),
+        vcs_url=F("impacted_package__fixed_by_package_commit_patches__vcs_url"),
     )
 
     introduced_patches_map = defaultdict(list)
     fixed_patches_map = defaultdict(list)
 
-    for row in patches_query:
-        key = (row["package_id"], row["impacted_package__advisory_id"])
-
-        if row["introduced_commit_hash"] or row["introduced_vcs_url"]:
+    for row in introduced_rows:
+        if row["commit_hash"] or row["vcs_url"]:
+            key = (row["package_id"], row["impacted_package__advisory_id"])
             introduced_patches_map[key].append(
                 {
-                    "commit_hash": row["introduced_commit_hash"],
-                    "vcs_url": row["introduced_vcs_url"],
+                    "commit_hash": row["commit_hash"],
+                    "vcs_url": row["vcs_url"],
                 }
             )
 
-        if row["fixed_commit_hash"] or row["fixed_vcs_url"]:
+    for row in fixed_rows:
+        if row["commit_hash"] or row["vcs_url"]:
+            key = (row["package_id"], row["impacted_package__advisory_id"])
             fixed_patches_map[key].append(
                 {
-                    "commit_hash": row["fixed_commit_hash"],
-                    "vcs_url": row["fixed_vcs_url"],
+                    "commit_hash": row["commit_hash"],
+                    "vcs_url": row["vcs_url"],
                 }
             )
 
     return introduced_patches_map, fixed_patches_map
 
 
-def collect_patches(patches_map, package_id, advisory_ids):
-    """Merge and dedupe patch entries from patches_map for all advisory_ids_set"""
-    seen = set()
-    collected = []
-    if not patches_map or not advisory_ids or not package_id:
-        return []
+def build_patch_set_map(patches_map, advisory_ids_by_set):
+    """
+    Returns:
+        {
+            advisory_set_id: [
+                {
+                    "commit_hash": "...",
+                    "vcs_url": "...",
+                }
+            ]
+        }
+    """
+    result = {}
 
-    for advisory_id in advisory_ids:
-        for patch in patches_map.get((package_id, advisory_id), []):
-            patch_key = (patch["commit_hash"], patch["vcs_url"])
-            if patch_key in seen:
+    for advisory_set_id, advisory_ids in advisory_ids_by_set.items():
+        seen = set()
+        collected = []
+
+        for (package_id, advisory_id), patches in patches_map.items():
+            if advisory_id not in advisory_ids:
                 continue
-            seen.add(patch_key)
-            collected.append(patch)
-    return collected
+
+            for patch in patches:
+                key = (
+                    patch["commit_hash"],
+                    patch["vcs_url"],
+                )
+
+                if key in seen:
+                    continue
+
+                seen.add(key)
+                collected.append(patch)
+
+        result[advisory_set_id] = collected
+    return result
 
 
 def get_affected_advisories_bulk(packages, max_advisories, base_url, reachability=False):
@@ -618,13 +639,23 @@ def get_affected_advisories_bulk(packages, max_advisories, base_url, reachabilit
         advisory_ids_by_set[advisory_set_id].add(advisory_id)
         all_advisory_ids.add(advisory_id)
 
+    introduced_patches_by_set = {}
+    fixed_patches_by_set = {}
     if reachability:
         introduced_patches_map, fixed_patches_map = get_patches_bulk(
             package_ids,
             advisory_ids=all_advisory_ids,
         )
-    else:
-        introduced_patches_map, fixed_patches_map = {}, {}
+
+        introduced_patches_by_set = build_patch_set_map(
+            introduced_patches_map,
+            advisory_ids_by_set,
+        )
+
+        fixed_patches_by_set = build_patch_set_map(
+            fixed_patches_map,
+            advisory_ids_by_set,
+        )
 
     ssvc_rows = (
         SSVC.objects.filter(
@@ -730,11 +761,13 @@ def get_affected_advisories_bulk(packages, max_advisories, base_url, reachabilit
                     "exploitability": exploitability,
                     "risk_score": risk_score,
                     "fixed_by_packages": fixed_by_packages,
-                    "introduced_in_patch": collect_patches(
-                        introduced_patches_map, package.id, advisory_ids_by_set.get(adv.id, {})
+                    "introduced_in_patch": introduced_patches_by_set.get(
+                        adv.id,
+                        [],
                     ),
-                    "fixed_in_patch": collect_patches(
-                        fixed_patches_map, package.id, advisory_ids_by_set.get(adv.id, {})
+                    "fixed_in_patch": fixed_patches_by_set.get(
+                        adv.id,
+                        [],
                     ),
                     "ssvc_trees": adv.ssvc_trees,
                     "resource_url": resource_url,
@@ -831,10 +864,8 @@ def get_affected_advisories_bulk(packages, max_advisories, base_url, reachabilit
                     "exploitability": advisory.exploitability,
                     "risk_score": advisory.risk_score,
                     "fixed_by_packages": fixed_by_packages,
-                    "introduced_in_patch": introduced_patches_map.get(
-                        (package.id, advisory_id), []
-                    ),
-                    "fixed_in_patch": fixed_patches_map.get((package.id, advisory_id), []),
+                    "introduced_in_patch": introduced_patches_by_set.get(advisory_id, []),
+                    "fixed_in_patch": introduced_patches_by_set.get(advisory_id, []),
                     "ssvc_trees": [
                         {
                             "vector": ssvc.vector,
