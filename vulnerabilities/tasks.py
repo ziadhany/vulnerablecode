@@ -179,7 +179,7 @@ def compute_queue_load_factor():
 
     for queue in RQ_QUEUES.keys():
         total_compute_seconds_per_queue[queue] = sum(
-            (p.latest_successful_run.runtime / (p.run_interval / 24))
+            (p.latest_successful_run.runtime / (p.run_interval / (24 * 60)))
             for p in models.PipelineSchedule.objects.filter(
                 is_active=True, run_priority=label_to_value[queue]
             )
