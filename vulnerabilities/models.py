@@ -3111,6 +3111,14 @@ class AdvisorySetMember(models.Model):
     advisory = models.ForeignKey("AdvisoryV2", on_delete=models.CASCADE)
     is_primary = models.BooleanField(default=False)
 
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["advisory_set", "advisory"],
+                name="unique_advisory_per_set",
+            ),
+        ]
+
 
 class AdvisoryV2(models.Model):
     """

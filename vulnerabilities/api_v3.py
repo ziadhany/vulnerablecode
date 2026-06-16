@@ -624,20 +624,69 @@ def get_affected_advisories_bulk(packages, max_advisories, base_url, reachabilit
 
     member_rows = AdvisorySetMember.objects.filter(
         advisory_set_id__in=advisory_set_ids,
-    ).values(
+    ).values_list(
         "advisory_set_id",
         "advisory_id",
     )
 
-    advisory_ids_by_set = defaultdict(set)
+    advisory_ids_by_set = defaultdict(list)
     all_advisory_ids = set()
 
-    for row in member_rows:
-        advisory_set_id = row["advisory_set_id"]
-        advisory_id = row["advisory_id"]
-
-        advisory_ids_by_set[advisory_set_id].add(advisory_id)
+    for advisory_set_id, advisory_id in member_rows:
+        advisory_ids_by_set[advisory_set_id].append(advisory_id)
         all_advisory_ids.add(advisory_id)
+
+    ssvc_rows = (
+        SSVC.objects.filter(
+            related_advisories__id__in=all_advisory_ids,
+            decision__isnull=False,
+        )
+        .select_related(
+            "source_advisory",
+        )
+        .values_list(
+            "related_advisories__id",
+            "vector",
+            "decision",
+            "options",
+            "source_advisory__url",
+        )
+    )
+
+    ssvc_by_advisory = defaultdict(list)
+
+    for advisory_id, vector, decision, options, source_url in ssvc_rows:
+        ssvc_by_advisory[advisory_id].append(
+            {
+                "vector": vector,
+                "decision": decision,
+                "options": options,
+                "source_url": source_url,
+            }
+        )
+
+    package_map = defaultdict(list)
+
+    for adv in advisory_sets:
+        adv._aliases_cache = [a.alias for a in adv.aliases.all()]
+
+        seen = set()
+        ssvc_trees = []
+
+        for advisory_id in advisory_ids_by_set.get(adv.id, ()):
+            for ssvc in ssvc_by_advisory.get(advisory_id, []):
+
+                key = ssvc["source_url"]
+
+                if key in seen:
+                    continue
+
+                seen.add(key)
+                ssvc_trees.append(ssvc)
+
+        adv.ssvc_trees = ssvc_trees
+
+        package_map[adv.package_id].append(adv)
 
     introduced_patches_by_set = {}
     fixed_patches_by_set = {}
@@ -656,71 +705,6 @@ def get_affected_advisories_bulk(packages, max_advisories, base_url, reachabilit
             fixed_patches_map,
             advisory_ids_by_set,
         )
-
-    ssvc_rows = (
-        SSVC.objects.filter(
-            related_advisories__id__in=all_advisory_ids,
-            decision__isnull=False,
-        )
-        .select_related(
-            "source_advisory",
-        )
-        .values(
-            "related_advisories__id",
-            "vector",
-            "decision",
-            "options",
-            "source_advisory__url",
-        )
-    )
-
-    ssvc_by_advisory = defaultdict(list)
-
-    for row in ssvc_rows:
-        advisory_id = row["related_advisories__id"]
-
-        ssvc_by_advisory[advisory_id].append(
-            {
-                "vector": row["vector"],
-                "decision": row["decision"],
-                "options": row["options"],
-                "source_url": row["source_advisory__url"],
-            }
-        )
-
-    package_map = defaultdict(list)
-
-    for adv in advisory_sets:
-        adv._aliases_cache = [a.alias for a in adv.aliases.all()]
-
-        advisory_ids = advisory_ids_by_set.get(adv.id, set())
-
-        seen = set()
-        ssvc_trees = []
-
-        for advisory_id in advisory_ids:
-            for ssvc in ssvc_by_advisory.get(advisory_id, []):
-
-                key = (
-                    ssvc["vector"],
-                    ssvc["decision"],
-                    (
-                        tuple(sorted(ssvc["options"].items()))
-                        if isinstance(ssvc["options"], dict)
-                        else str(ssvc["options"])
-                    ),
-                    ssvc["source_url"],
-                )
-
-                if key in seen:
-                    continue
-
-                seen.add(key)
-                ssvc_trees.append(ssvc)
-
-        adv.ssvc_trees = ssvc_trees
-
-        package_map[adv.package_id].append(adv)
 
     for package in packages:
         groups = package_map.get(package.id, [])
