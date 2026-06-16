@@ -889,17 +889,17 @@ def get_affected_advisories_bulk(packages, max_advisories, base_url, reachabilit
 
 
 def get_fixing_advisories_bulk(packages, max_advisories, base_url):
-    package_ids = [p.id for p in packages]
+    package_ids = []
+    package_ids_with_multiple_importers = []
+    packages_without_multiple_importers = []
 
-    package_ids_with_multiple_importers = PackageV2.objects.filter(
-        type__in=TYPES_WITH_MULTIPLE_IMPORTERS, id__in=package_ids
-    ).values_list("id", flat=True)
+    for p in packages:
+        package_ids.append(p.id)
 
-    packages_without_multiple_importers = (
-        PackageV2.objects.filter(id__in=package_ids)
-        .exclude(id__in=package_ids_with_multiple_importers)
-        .only("id", "package_url")
-    )
+        if p.type in TYPES_WITH_MULTIPLE_IMPORTERS:
+            package_ids_with_multiple_importers.append(p.id)
+        else:
+            packages_without_multiple_importers.append(p)
 
     advisory_sets = list(
         AdvisorySet.objects.filter(
