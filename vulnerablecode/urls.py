@@ -28,6 +28,7 @@ from vulnerabilities.api_v2 import VulnerabilityV2ViewSet
 from vulnerabilities.api_v3 import AdvisoryV3ViewSet
 from vulnerabilities.api_v3 import AffectedByAdvisoriesViewSet
 from vulnerabilities.api_v3 import FixingAdvisoriesViewSet
+from vulnerabilities.api_v3 import PackageTypesView
 from vulnerabilities.api_v3 import PackageV3ViewSet
 from vulnerabilities.views import AdminLoginView
 from vulnerabilities.views import AdvisoryDetails
@@ -83,6 +84,7 @@ api_v3_router.register(
     "affected-by-advisories", AffectedByAdvisoriesViewSet, basename="affected-by-advisories"
 )
 api_v3_router.register("fixing-advisories", FixingAdvisoriesViewSet, basename="fixing-advisories")
+api_v3_router.register("package-types", PackageTypesView, basename="package-types")
 
 urlpatterns = [
     path("admin/login/", AdminLoginView.as_view(), name="admin-login"),

@@ -11,6 +11,7 @@ from collections import defaultdict
 from urllib.parse import urlencode
 
 from django.contrib.postgres.aggregates import ArrayAgg
+from django.core.cache import cache
 from django.db.models import Exists
 from django.db.models import F
 from django.db.models import Max
@@ -22,8 +23,10 @@ from drf_spectacular.utils import extend_schema
 from packageurl import PackageURL
 from rest_framework import serializers
 from rest_framework import viewsets
+from rest_framework.response import Response
 from rest_framework.reverse import reverse
 from rest_framework.throttling import AnonRateThrottle
+from rest_framework.viewsets import ViewSet
 
 from vulnerabilities.models import SSVC
 from vulnerabilities.models import AdvisoryAlias
@@ -334,6 +337,20 @@ class PackageV3ViewSet(viewsets.GenericViewSet):
             },
         )
         return self.get_paginated_response(serializer.data)
+
+
+class PackageTypesView(ViewSet):
+    def list(self, request):
+        types = cache.get("package_types")
+
+        if types is None:
+            types = list(
+                PackageV2.objects.values_list("type", flat=True).distinct().order_by("type")
+            )
+
+            cache.set("package_types", types, 60 * 60)
+
+        return Response(types)
 
 
 class AffectedByAdvisoryV3Serializer(AdvisoryV3Serializer):
