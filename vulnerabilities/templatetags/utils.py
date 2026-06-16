@@ -64,3 +64,17 @@ def normalize_links(value):
 
     markdown_links = re.compile(r"\[([^\]]+)\]\((https?://[^\s)]+)\s*\)")
     return markdown_links.sub(r"\1 \2", value)
+
+
+@register.filter
+def humanize_duration(minutes):
+    """Humanize pipeline run interval."""
+    if minutes < 60:
+        unit = "minute" if minutes == 1 else "minutes"
+        return f"{minutes} {unit}"
+
+    hours = minutes / 60
+    value = int(hours) if hours.is_integer() else round(hours, 1)
+
+    unit = "hour" if value == 1 else "hours"
+    return f"{value} {unit}"
