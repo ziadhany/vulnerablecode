@@ -9,6 +9,7 @@
 
 from unittest.mock import patch
 
+from django.core.cache import cache
 from django.urls import reverse
 from django.utils import timezone
 from packageurl import PackageURL
@@ -77,7 +78,7 @@ class APIV3TestCase(APITestCase):
     def test_packages_post_with_details(self):
         url = reverse("package-v3-list")
 
-        with self.assertNumQueries(13):
+        with self.assertNumQueries(11):
             response = self.client.post(
                 url,
                 data={
@@ -481,3 +482,38 @@ class PackageCommitPatchComplexTest(APITestCase):
         fixed_hashes = [patch["commit_hash"] for patch in advisory_data["fixed_in_patches"]]
         assert "98e516011d6e096e25247b82fc5f196bbeecff10" in fixed_hashes
         assert "2fc5f196bbeecff1098e516011d6e096e25247b8" in fixed_hashes
+
+
+class TestPackageTypesView(APITestCase):
+    def test_returns_distinct_types_and_caches_response(self):
+        cache.delete("package_types")
+
+        PackageV2.objects.create(
+            package_url="pkg:npm/test1@1.0.0",
+            plain_package_url="pkg:npm/test1",
+            type="npm",
+            name="test1",
+        )
+
+        PackageV2.objects.create(
+            package_url="pkg:npm/test2@1.0.0",
+            plain_package_url="pkg:npm/test2",
+            type="npm",
+            name="test2",
+        )
+
+        PackageV2.objects.create(
+            package_url="pkg:pypi/test@1.0.0",
+            plain_package_url="pkg:pypi/test",
+            type="pypi",
+            name="test",
+        )
+
+        client = APIClient(enforce_csrf_checks=True)
+
+        response = client.get(reverse("package-types-list"))
+
+        assert response.status_code == 200
+        assert response.json() == ["npm", "pypi"]
+
+        assert cache.get("package_types") == ["npm", "pypi"]
