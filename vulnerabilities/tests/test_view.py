@@ -36,6 +36,9 @@ TEST_DIR = os.path.join(BASE_DIR, "test_data/package_sort")
 class PackageSearchTestCase(TestCase):
     def setUp(self):
         self.client = Client()
+        session = self.client.session
+        session["altcha_verified_at"] = time.time()
+        session.save()
         packages = [
             "pkg:nginx/nginx@0.6.18",
             "pkg:nginx/nginx@1.20.0",
@@ -169,6 +172,9 @@ class VulnerabilitySearchTestCase(TestCase):
         alias = Alias(alias="TEST-2022", vulnerability=vulnerability)
         alias.save()
         self.client = Client()
+        session = self.client.session
+        session["altcha_verified_at"] = time.time()
+        session.save()
 
     def test_vulnerabilties_search_view_with_vcid_works_and_pk_does_not(self):
         response = self.client.get(f"/vulnerabilities/{self.vulnerability.pk}")
@@ -323,20 +329,28 @@ class VulnerabilitySearchTestCaseWithPackages(TestCase):
 
         self.vuln1.severities.add(self.severity1)
         self.vuln1.severities.add(self.severity2)
+        self.client = Client()
+        session = self.client.session
+        session["altcha_verified_at"] = time.time()
+        session.save()
         self.vuln1.save()
 
     def test_aggregate_fixed_and_affected_packages(self):
-        with self.assertNumQueries(11):
+        with self.assertNumQueries(12):
             start_time = time.time()
             response = self.client.get(f"/vulnerabilities/{self.vuln1.vulnerability_id}")
             end_time = time.time()
-            assert end_time - start_time < 0.05
+            # Increase time for ALTCHA verification
+            assert end_time - start_time < 0.06
             self.assertEqual(response.status_code, 200)
 
 
 class ThrottleTestCase(TestCase):
     def setUp(self):
         self.client = Client()
+        session = self.client.session
+        session["altcha_verified_at"] = time.time()
+        session.save()
         cache.clear()
 
     def test_throttle_after_15_requests(self):

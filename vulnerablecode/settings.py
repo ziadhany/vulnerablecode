@@ -45,6 +45,9 @@ ALTCHA_HMAC_KEY = env.str("ALTCHA_HMAC_KEY")
 # SECURITY WARNING: do not run with debug turned on in production
 DEBUG = env.bool("VULNERABLECODE_DEBUG", default=False)
 
+# remove altcha verification once broswer is closed
+SESSION_EXPIRE_AT_BROWSER_CLOSE = True
+
 # SECURITY WARNING: do not  run with debug turned on in production
 DEBUG_TOOLBAR = env.bool("VULNERABLECODE_DEBUG_TOOLBAR", default=False)
 
@@ -108,6 +111,7 @@ MIDDLEWARE = (
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "vulnerabilities.middleware.ban_user_agent.BanUserAgent",
     "vulnerabilities.middleware.timezone.UserTimezoneMiddleware",
+    "vulnerabilities.middleware.altcha_protection.AltchaProtectionMiddleware",
 )
 
 ROOT_URLCONF = "vulnerablecode.urls"

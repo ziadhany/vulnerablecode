@@ -37,6 +37,7 @@ from vulnerabilities.views import AdvisoryPackageCurationView
 from vulnerabilities.views import AdvisoryPackagesDetails
 from vulnerabilities.views import AdvisoryToDoListView
 from vulnerabilities.views import AffectedByAdvisoriesListView
+from vulnerabilities.views import AltchaView
 from vulnerabilities.views import ApiUserCreateView
 from vulnerabilities.views import FixingAdvisoriesListView
 from vulnerabilities.views import HomePage
@@ -144,6 +145,7 @@ urlpatterns = [
         AdvisoryDetails.as_view(),
         name="advisory_details",
     ),
+    path("altcha/", AltchaView.as_view(), name="altcha"),
     path(
         "packages/search/",
         PackageSearch.as_view(),

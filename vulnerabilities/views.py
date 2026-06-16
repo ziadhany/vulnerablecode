@@ -9,12 +9,14 @@
 
 import json
 import logging
+import time
 from collections import defaultdict
 from typing import List
 
 from cvss.exceptions import CVSS2MalformedError
 from cvss.exceptions import CVSS3MalformedError
 from cvss.exceptions import CVSS4MalformedError
+from django import forms
 from django.contrib import messages
 from django.contrib.auth.views import LoginView
 from django.core.cache import cache
@@ -34,12 +36,15 @@ from django.views import View
 from django.views import generic
 from django.views.generic.detail import DetailView
 from django.views.generic.edit import FormMixin
+from django.views.generic.edit import FormView
 from django.views.generic.list import ListView
+from django_altcha import AltchaField
 
 from vulnerabilities import models
 from vulnerabilities.forms import AdminLoginForm
 from vulnerabilities.forms import AdvisorySearchForm
 from vulnerabilities.forms import AdvisoryToDoForm
+from vulnerabilities.forms import AltchaForm
 from vulnerabilities.forms import ApiUserCreationForm
 from vulnerabilities.forms import PackageSearchForm
 from vulnerabilities.forms import PipelineSchedulePackageForm
@@ -1154,3 +1159,12 @@ class AdvisoryPackageCurationView(DetailView):
         context["vulnerability_id"] = todo.alias
         context["curation_items"] = json.dumps(todo.issue_detail["curation_items"])
         return context
+
+
+class AltchaView(FormView):
+    template_name = "altcha.html"
+    form_class = AltchaForm
+
+    def form_valid(self, form):
+        self.request.session["altcha_verified_at"] = time.time()
+        return redirect("/")
