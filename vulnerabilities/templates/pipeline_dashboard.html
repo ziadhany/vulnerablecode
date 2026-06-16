@@ -151,7 +151,7 @@ Pipeline Dashboard
                                         {% if schedule.is_run_once %}
                                             Once
                                         {% else %}
-                                            {{ schedule.run_interval|humanize_duration }}
+                                            {{ schedule.run_interval|humanize_minutes }}
                                         {% endif %}
                                     </div>
                                     <div class="column" style="flex: 0 0 14%;">

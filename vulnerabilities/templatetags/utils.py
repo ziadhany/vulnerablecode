@@ -28,6 +28,11 @@ def humanize_duration(duration):
     return humanize_time(seconds=duration)
 
 
+@register.filter
+def humanize_minutes(duration):
+    return humanize_time(seconds=duration * 60)
+
+
 @register.simple_tag(takes_context=True)
 def active_item(context, url_name):
     """Return is-active if navbar item is active."""
