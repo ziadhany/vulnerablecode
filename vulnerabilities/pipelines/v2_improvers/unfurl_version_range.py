@@ -44,7 +44,8 @@ class UnfurlVersionRangePipeline(VulnerableCodePipeline):
 
     pipeline_id = "unfurl_version_range_v2"
 
-    run_interval = 1
+    # Run pipeline every 10 minutes.
+    run_interval = 10
     run_priority = PipelineSchedule.ExecutionPriority.HIGH
 
     # Days elapsed before version range is re-unfurled
