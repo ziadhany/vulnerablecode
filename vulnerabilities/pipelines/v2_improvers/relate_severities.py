@@ -13,6 +13,7 @@ from itertools import batched
 from django.db import transaction
 
 from vulnerabilities.models import AdvisoryV2
+from vulnerabilities.models import PipelineSchedule
 from vulnerabilities.pipelines import VulnerableCodePipeline
 from vulnerabilities.pipelines.v2_importers.epss_importer_v2 import EPSSImporterPipeline
 from vulnerabilities.pipelines.v2_importers.suse_score_importer import (
@@ -34,6 +35,10 @@ class RelateSeveritiesPipeline(VulnerableCodePipeline):
     """
 
     pipeline_id = "relate_severities_v2"
+
+    # Run pipeline every 30 minutes.
+    run_interval = 30
+    run_priority = PipelineSchedule.ExecutionPriority.HIGH
 
     # Severity systems to process
     SUPPORTED_SYSTEMS = {

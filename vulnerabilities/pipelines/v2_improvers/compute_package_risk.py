@@ -30,6 +30,10 @@ class ComputePackageRiskPipeline(VulnerableCodePipeline):
     pipeline_id = "compute_package_risk_v2"
     license_expression = None
 
+    # Run pipeline every 30 minutes.
+    run_interval = 30
+    run_priority = PipelineSchedule.ExecutionPriority.HIGH
+
     @classmethod
     def steps(cls):
         return (

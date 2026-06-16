@@ -29,6 +29,10 @@ class MetasploitImproverPipeline(VulnerableCodePipeline):
     pipeline_id = "enhance_with_metasploit_v2"
     spdx_license_expression = "BSD-3-clause"
 
+    # Run pipeline every 30 minutes.
+    run_interval = 30
+    run_priority = PipelineSchedule.ExecutionPriority.HIGH
+
     @classmethod
     def steps(cls):
         return (
