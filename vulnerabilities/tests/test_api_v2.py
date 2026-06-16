@@ -756,7 +756,7 @@ class PipelineScheduleV2ViewSetTest(APITestCase):
 
         self.assertNotEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
-        self.assertEqual(self.schedule1.run_interval, 24)
+        self.assertEqual(self.schedule1.run_interval, 1440)
 
     @patch("vulnerabilities.models.PipelineSchedule.create_new_job")
     def test_schedule_update_with_staff_token_not_permitted(self, mock_create_new_job):
@@ -771,20 +771,20 @@ class PipelineScheduleV2ViewSetTest(APITestCase):
 
         self.assertNotEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
-        self.assertEqual(self.schedule1.run_interval, 24)
+        self.assertEqual(self.schedule1.run_interval, 1440)
 
     @patch("vulnerabilities.models.PipelineSchedule.create_new_job")
     def test_schedule_update_with_staff_session_permitted(self, mock_create_new_job):
         mock_create_new_job.return_value = "work-id7"
         self.client.login(username="admin_with_session", password="adminpassword")
 
-        data = {"run_interval": 2}
+        data = {"run_interval": 5}
         response = self.client.patch("/api/v2/pipelines/test_pipeline/", data, format="json")
         self.schedule1.refresh_from_db()
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertNotEqual(response.status_code, status.HTTP_403_FORBIDDEN)
-        self.assertEqual(self.schedule1.run_interval, 2)
+        self.assertEqual(self.schedule1.run_interval, 5)
 
 
 class CodeFixV2APITest(APITestCase):
