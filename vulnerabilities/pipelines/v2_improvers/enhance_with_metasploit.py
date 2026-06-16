@@ -16,6 +16,7 @@ from aboutcode.pipeline import LoopProgress
 from dateutil import parser as dateparser
 
 from vulnerabilities.models import AdvisoryExploit
+from vulnerabilities.models import PipelineSchedule
 from vulnerabilities.pipelines import VulnerableCodePipeline
 from vulnerabilities.utils import build_alias_to_advisory_map
 

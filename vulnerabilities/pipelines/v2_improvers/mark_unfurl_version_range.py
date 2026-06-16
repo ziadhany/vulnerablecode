@@ -24,7 +24,6 @@ from vulnerabilities.models import ImpactedPackageFixedBy
 from vulnerabilities.models import PackageV2
 from vulnerabilities.models import PipelineSchedule
 from vulnerabilities.pipelines import VulnerableCodePipeline
-from vulnerabilities.pipes.group_advisories import group_advisory_for_package
 from vulnerabilities.pipes.group_advisories import group_single_package_with_provided_advisories
 from vulnerabilities.pipes.risk_score import compute_package_risk_score_bulk
 from vulnerabilities.utils import TYPES_WITH_MULTIPLE_IMPORTERS
