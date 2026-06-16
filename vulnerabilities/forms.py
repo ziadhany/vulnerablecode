@@ -133,3 +133,7 @@ class AdvisoryToDoForm(forms.Form):
         choices=[("", "All")] + ISSUE_TYPE_CHOICES,
         widget=forms.Select(attrs={"class": "select"}),
     )
+
+
+class AltchaForm(forms.Form):
+    altcha = AltchaField()

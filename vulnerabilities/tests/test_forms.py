@@ -7,6 +7,9 @@
 # See https://aboutcode.org for more information about nexB OSS projects.
 #
 
+import time
+
+from django.test import Client
 from django.test import TestCase
 
 from vulnerabilities.forms import VulnerabilitySearchForm
@@ -15,6 +18,10 @@ from vulnerabilities.models import Vulnerability
 
 class TestVulnerabilitySearchForm(TestCase):
     def setUp(self) -> None:
+        self.client = Client()
+        session = self.client.session
+        session["altcha_verified_at"] = time.time()
+        session.save()
         self.vulnerability = Vulnerability.objects.create(
             vulnerability_id="VCID-1234",
             summary="test-vuln1",
