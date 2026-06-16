@@ -547,17 +547,17 @@ def build_patch_set_map(patches_map, advisory_ids_by_set):
 
 
 def get_affected_advisories_bulk(packages, max_advisories, base_url, reachability=False):
-    package_ids = [p.id for p in packages]
+    package_ids = []
+    package_ids_with_multiple_importers = []
+    packages_without_multiple_importers = []
 
-    package_ids_with_multiple_importers = PackageV2.objects.filter(
-        type__in=TYPES_WITH_MULTIPLE_IMPORTERS, id__in=package_ids
-    ).values_list("id", flat=True)
+    for p in packages:
+        package_ids.append(p.id)
 
-    packages_without_multiple_importers = (
-        PackageV2.objects.filter(id__in=package_ids)
-        .exclude(id__in=package_ids_with_multiple_importers)
-        .only("id", "package_url")
-    )
+        if p.type in TYPES_WITH_MULTIPLE_IMPORTERS:
+            package_ids_with_multiple_importers.append(p.id)
+        else:
+            packages_without_multiple_importers.append(p)
 
     result = {}
 
@@ -780,6 +780,9 @@ def get_affected_advisories_bulk(packages, max_advisories, base_url, reachabilit
 
     packages = list(packages_without_multiple_importers)
 
+    if not packages:
+        return result
+
     package_by_purl = {package.package_url: package for package in packages}
 
     purls = list(package_by_purl.keys())
@@ -901,7 +904,9 @@ def get_fixing_advisories_bulk(packages, max_advisories, base_url):
         AdvisorySet.objects.filter(
             package_id__in=package_ids_with_multiple_importers,
             relation_type="fixing",
-        ).only(
+        )
+        .select_related("primary_advisory")
+        .only(
             "id",
             "package_id",
             "primary_advisory__advisory_id",
@@ -936,6 +941,9 @@ def get_fixing_advisories_bulk(packages, max_advisories, base_url):
         result[package.id] = grouped
 
     packages = list(packages_without_multiple_importers)
+
+    if not packages:
+        return result
 
     package_by_purl = {package.package_url: package for package in packages}
 
