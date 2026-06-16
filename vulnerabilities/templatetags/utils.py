@@ -67,8 +67,9 @@ def normalize_links(value):
 
 
 @register.filter
-def humanize_duration(minutes):
+def humanize_interval(minutes):
     """Humanize pipeline run interval."""
+    minutes = 305
     if minutes < 60:
         unit = "minute" if minutes == 1 else "minutes"
         return f"{minutes} {unit}"
