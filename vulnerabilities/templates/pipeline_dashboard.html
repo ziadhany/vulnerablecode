@@ -45,7 +45,7 @@ Pipeline Dashboard
     <div class="column">
     </div>
 
-    <div class="column is-four-fifths">
+    <div class="column is-11">
         <div class="content is-normal">
             <h1>Pipeline Dashboard</h1>
             <hr />
@@ -126,13 +126,13 @@ Pipeline Dashboard
                         <th colspan="6">
                             <div class="box is-small">
                                 <div class="columns is-mobile is-vcentered">
-                                    <div class="column is-one-quarter">Pipeline ID</div>
-                                    <div class="column is-one-eighth">Active</div>
-                                    <div class="column is-one-eighth">Priority</div>
-                                    <div class="column is-one-eighth">Interval</div>
-                                    <div class="column is-one-eighth">Status</div>
-                                    <div class="column is-one-fifth">Last Run End Time</div>
-                                    <div class="column is-one-fifth">Next Run Start</div>
+                                    <div class="column has-text-left" style="flex: 0 0 25%; font-weight: bold;">Pipeline ID</div>
+                                    <div class="column has-text-left" style="flex: 0 0 8%; font-weight: bold;">Active</div>
+                                    <div class="column has-text-left" style="flex: 0 0 8%; font-weight: bold;">Priority</div>
+                                    <div class="column has-text-left" style="flex: 0 0 13%; font-weight: bold;">Interval</div>
+                                    <div class="column has-text-left" style="flex: 0 0 14%; font-weight: bold;">Status</div>
+                                    <div class="column has-text-left" style="flex: 0 0 18%; font-weight: bold;">Last Run End Time</div>
+                                    <div class="column has-text-left" style="flex: 0 0 14%; font-weight: bold;">Next Run Start</div>
                                 </div>
                             </div>
                         </th>
@@ -143,30 +143,30 @@ Pipeline Dashboard
                     <tr>
                         <td colspan="6">
                             <a href="{% url 'runs-list' pipeline_id=schedule.pipeline_id %}" class="has-text-info">
-                                <div class="columns px-1 is-mobile is-vcentered">
-                                    <div class="column is-one-quarter">{{ schedule.pipeline_id }}</div>
-                                    <div class="column is-one-eighth has-text-grey">{{ schedule.is_active|yesno:"Yes,No" }}</div>
-                                    <div class="column is-one-eighth has-text-grey">{{ schedule.get_run_priority_display|capfirst}}</div>
-                                    <div class="column is-one-eighth has-text-grey">
+                                <div class="columns mx-2 is-mobile is-vcentered">
+                                    <div class="colum has-text-left" style="flex: 0 0 25%;">{{ schedule.pipeline_id }}</div>
+                                    <div class="column has-text-grey" style="flex: 0 0 8%;">{{ schedule.is_active|yesno:"Yes,No" }}</div>
+                                    <div class="column has-text-grey" style="flex: 0 0 8%;">{{ schedule.get_run_priority_display|capfirst}}</div>
+                                    <div class="column has-text-grey" style="flex: 0 0 13%;">
                                         {% if schedule.is_run_once %}
                                             Once
                                         {% else %}
-                                            {{ schedule.run_interval }} hour{{ schedule.run_interval|pluralize }}
+                                            {{ schedule.run_interval|humanize_duration }}
                                         {% endif %}
                                     </div>
-                                    <div class="column is-one-eighth">
+                                    <div class="column" style="flex: 0 0 14%;">
                                         <span class="is-flex is-align-items-center">
                                             {% include "includes/job_status.html" with status=schedule.status %}
                                         </span>
                                     </div>
-                                    <div class="column is-one-fifth has-text-grey">
+                                    <div class="column has-text-grey" style="flex: 0 0 18%;">
                                         {% if schedule.latest_run_end_date %}
                                             {{ schedule.latest_run_end_date|date:"Y-m-d h:i a T" }}
                                         {% else %}
                                             N/A
                                         {% endif %}
                                     </div>
-                                    <div class="column is-one-fifth has-text-grey">
+                                    <div class="column has-text-grey" style="flex: 0 0 14%;">
                                         {% if schedule.next_run_date %}
                                             {{ schedule.next_run_date|date:"Y-m-d" }}
                                         {% else %}
