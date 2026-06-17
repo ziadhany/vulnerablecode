@@ -49,6 +49,7 @@ from vulnerabilities.forms import ApiUserCreationForm
 from vulnerabilities.forms import PackageSearchForm
 from vulnerabilities.forms import PipelineSchedulePackageForm
 from vulnerabilities.forms import VulnerabilitySearchForm
+from vulnerabilities.middleware.altcha_protection import SESSION_TIMEOUT as ALTCHA_SESSION_TIMEOUT
 from vulnerabilities.models import ISSUE_TYPE_CHOICES
 from vulnerabilities.models import AdvisorySetMember
 from vulnerabilities.models import AdvisoryToDoV2
@@ -1164,6 +1165,17 @@ class AdvisoryPackageCurationView(DetailView):
 class AltchaView(FormView):
     template_name = "altcha.html"
     form_class = AltchaForm
+
+    def dispatch(self, request, *args, **kwargs):
+        """Do not show Altcha challenge to already validated user."""
+        verified_at = request.session.get("altcha_verified_at")
+
+        if verified_at:
+            if time.time() - verified_at < ALTCHA_SESSION_TIMEOUT:
+                next_url = request.GET.get("next", "/")
+                return redirect(next_url)
+
+        return super().dispatch(request, *args, **kwargs)
 
     def form_valid(self, form):
         self.request.session["altcha_verified_at"] = time.time()
