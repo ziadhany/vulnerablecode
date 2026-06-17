@@ -22,7 +22,7 @@ class AltchaProtectionMiddleware(MiddlewareMixin):
         "/fixing-advisories/v2/",
     )
 
-    SESSION_TIMEOUT = 3600  # 1 hour
+    SESSION_TIMEOUT = 900  # 15 minutes
 
     def __call__(self, request):
         protected = any(request.path.startswith(prefix) for prefix in self.PROTECTED_PREFIXES)
