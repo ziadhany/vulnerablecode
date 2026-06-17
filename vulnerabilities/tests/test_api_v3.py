@@ -56,6 +56,20 @@ class APIV3TestCase(APITestCase):
 
         self.client = APIClient(enforce_csrf_checks=True)
 
+        self.allow_request_patcher = patch(
+            "vulnerabilities.throttling.PermissionBasedUserRateThrottle.allow_request",
+            return_value=True,
+        )
+        self.allow_request_patcher.start()
+        self.addCleanup(self.allow_request_patcher.stop)
+
+        self.anon_patcher = patch(
+            "rest_framework.throttling.AnonRateThrottle.allow_request",
+            return_value=True,
+        )
+        self.anon_patcher.start()
+        self.addCleanup(self.anon_patcher.stop)
+
     def test_packages_post_without_details(self):
         url = reverse("package-v3-list")
 
@@ -67,6 +81,7 @@ class APIV3TestCase(APITestCase):
                     "details": False,
                 },
                 format="json",
+                HTTP_USER_AGENT="VCIO_API_AGENT",
             )
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -86,6 +101,7 @@ class APIV3TestCase(APITestCase):
                     "details": True,
                 },
                 format="json",
+                HTTP_USER_AGENT="VCIO_API_AGENT",
             )
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -101,6 +117,7 @@ class APIV3TestCase(APITestCase):
                 url,
                 data={"purls": ["pkg:pypi/sample@1.0.0"]},
                 format="json",
+                HTTP_USER_AGENT="VCIO_API_AGENT",
             )
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -114,8 +131,7 @@ class APIV3TestCase(APITestCase):
 
         with self.assertNumQueries(11):
             response = self.client.get(
-                url,
-                {"purl": "pkg:pypi/sample@1.0.0"},
+                url, {"purl": "pkg:pypi/sample@1.0.0"}, HTTP_USER_AGENT="VCIO_API_AGENT"
             )
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -129,8 +145,7 @@ class APIV3TestCase(APITestCase):
 
         with self.assertNumQueries(3):
             response = self.client.get(
-                url,
-                {"purl": "pkg:pypi/sample@1.0.0"},
+                url, {"purl": "pkg:pypi/sample@1.0.0"}, HTTP_USER_AGENT="VCIO_API_AGENT"
             )
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -140,9 +155,7 @@ class APIV3TestCase(APITestCase):
         url = reverse("package-v3-list")
 
         response = self.client.post(
-            url,
-            data={"purls": []},
-            format="json",
+            url, data={"purls": []}, format="json", HTTP_USER_AGENT="VCIO_API_AGENT"
         )
 
         self.assertEqual(response.status_code, 200)
@@ -163,6 +176,7 @@ class APIV3TestCase(APITestCase):
                 "details": False,
             },
             format="json",
+            HTTP_USER_AGENT="VCIO_API_AGENT",
         )
 
         self.assertEqual(response.status_code, 200)
@@ -199,6 +213,19 @@ class APIV3TestCaseOnePackageMultipleAdvisories(APITestCase):
             advisory_obj.save()
 
         self.client = APIClient(enforce_csrf_checks=True)
+        self.allow_request_patcher = patch(
+            "vulnerabilities.throttling.PermissionBasedUserRateThrottle.allow_request",
+            return_value=True,
+        )
+        self.allow_request_patcher.start()
+        self.addCleanup(self.allow_request_patcher.stop)
+
+        self.anon_patcher = patch(
+            "rest_framework.throttling.AnonRateThrottle.allow_request",
+            return_value=True,
+        )
+        self.anon_patcher.start()
+        self.addCleanup(self.anon_patcher.stop)
 
     def test_advisories_post(self):
         url = reverse("advisory-v3-list")
@@ -208,6 +235,7 @@ class APIV3TestCaseOnePackageMultipleAdvisories(APITestCase):
                 url,
                 data={"purls": ["pkg:pypi/sample@1.0.0"]},
                 format="json",
+                HTTP_USER_AGENT="VCIO_API_AGENT",
             )
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -246,6 +274,20 @@ class APIV3TestCaseOneAdvisoryMultiplePackages(APITestCase):
 
         self.client = APIClient(enforce_csrf_checks=True)
 
+        self.allow_request_patcher = patch(
+            "vulnerabilities.throttling.PermissionBasedUserRateThrottle.allow_request",
+            return_value=True,
+        )
+        self.allow_request_patcher.start()
+        self.addCleanup(self.allow_request_patcher.stop)
+
+        self.anon_patcher = patch(
+            "rest_framework.throttling.AnonRateThrottle.allow_request",
+            return_value=True,
+        )
+        self.anon_patcher.start()
+        self.addCleanup(self.anon_patcher.stop)
+
     def test_get_all_vulnerable_purls(self):
         url = reverse("package-v3-list")
 
@@ -256,6 +298,7 @@ class APIV3TestCaseOneAdvisoryMultiplePackages(APITestCase):
                     "purls": [],
                 },
                 format="json",
+                HTTP_USER_AGENT="VCIO_API_AGENT",
             )
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -291,6 +334,20 @@ class PackageCommitPatchTests(APITestCase):
             url="https://github.com/aboutcode-org/sample",
         )
 
+        self.allow_request_patcher = patch(
+            "vulnerabilities.throttling.PermissionBasedUserRateThrottle.allow_request",
+            return_value=True,
+        )
+        self.allow_request_patcher.start()
+        self.addCleanup(self.allow_request_patcher.stop)
+
+        self.anon_patcher = patch(
+            "rest_framework.throttling.AnonRateThrottle.allow_request",
+            return_value=True,
+        )
+        self.anon_patcher.start()
+        self.addCleanup(self.anon_patcher.stop)
+
         self.advisory = insert_advisory_v2(self.advisory, "importer_1", print, 100)
         self.advisory.is_latest = True
         self.advisory._all_impacts_unfurled_at = timezone.now()
@@ -318,6 +375,7 @@ class PackageCommitPatchTests(APITestCase):
             url,
             data={"purls": ["pkg:pypi/sample@1.0.0"], "details": True, "reachability": True},
             format="json",
+            HTTP_USER_AGENT="VCIO_API_AGENT",
         )
 
         assert response.status_code == 200
@@ -352,6 +410,20 @@ class PackageCommitPatchComplexTest(APITestCase):
             package_url="pkg:pypi/sample@1.0.0",
             defaults={"name": "sample", "type": "pypi", "version": "1.0.0"},
         )
+
+        self.allow_request_patcher = patch(
+            "vulnerabilities.throttling.PermissionBasedUserRateThrottle.allow_request",
+            return_value=True,
+        )
+        self.allow_request_patcher.start()
+        self.addCleanup(self.allow_request_patcher.stop)
+
+        self.anon_patcher = patch(
+            "rest_framework.throttling.AnonRateThrottle.allow_request",
+            return_value=True,
+        )
+        self.anon_patcher.start()
+        self.addCleanup(self.anon_patcher.stop)
 
         self.advisory_data = AdvisoryDataV2(
             advisory_id="AVID-123",
@@ -439,6 +511,7 @@ class PackageCommitPatchComplexTest(APITestCase):
             url,
             data={"purls": ["pkg:pypi/sample@1.0.0"], "details": True, "reachability": True},
             format="json",
+            HTTP_USER_AGENT="VCIO_API_AGENT",
         )
 
         assert response.status_code == 200
@@ -461,6 +534,7 @@ class PackageCommitPatchComplexTest(APITestCase):
                 url,
                 data={"purls": ["pkg:pypi/sample@1.0.0"], "details": True, "reachability": True},
                 format="json",
+                HTTP_USER_AGENT="VCIO_API_AGENT",
             )
 
         assert response.status_code == 200
@@ -485,6 +559,21 @@ class PackageCommitPatchComplexTest(APITestCase):
 
 
 class TestPackageTypesView(APITestCase):
+    def setUp(self):
+        self.allow_request_patcher = patch(
+            "vulnerabilities.throttling.PermissionBasedUserRateThrottle.allow_request",
+            return_value=True,
+        )
+        self.allow_request_patcher.start()
+        self.addCleanup(self.allow_request_patcher.stop)
+
+        self.anon_patcher = patch(
+            "rest_framework.throttling.AnonRateThrottle.allow_request",
+            return_value=True,
+        )
+        self.anon_patcher.start()
+        self.addCleanup(self.anon_patcher.stop)
+
     def test_returns_distinct_types_and_caches_response(self):
         cache.delete("package_types")
 
@@ -511,7 +600,7 @@ class TestPackageTypesView(APITestCase):
 
         client = APIClient(enforce_csrf_checks=True)
 
-        response = client.get(reverse("package-types-list"))
+        response = client.get(reverse("package-types-list"), HTTP_USER_AGENT="VCIO_API_AGENT")
 
         assert response.status_code == 200
         assert response.json() == ["npm", "pypi"]
