@@ -145,8 +145,8 @@ class VulnerableCodePipeline(PipelineDefinition, BasePipelineRun):
     # When set to true pipeline is run only once.
     # To rerun onetime pipeline reset is_active field to True via migration.
     run_once = False
-    # Interval between runs in hour.
-    run_interval = 24
+    # Interval between runs in minutes.
+    run_interval = 1440
     run_priority = PipelineSchedule.ExecutionPriority.DEFAULT
 
     def on_failure(self):
@@ -180,8 +180,8 @@ class VulnerableCodeBaseImporterPipeline(VulnerableCodePipeline):
     # When set to true pipeline is run only once.
     # To rerun onetime pipeline reset is_active field to True via migration.
     run_once = False
-    # Interval between runs in hour.
-    run_interval = 24
+    # Interval between runs in minutes.
+    run_interval = 1440
     run_priority = PipelineSchedule.ExecutionPriority.DEFAULT
 
     @classmethod
@@ -290,8 +290,8 @@ class VulnerableCodeBaseImporterPipelineV2(VulnerableCodePipeline):
     # When set to true pipeline is run only once.
     # To rerun onetime pipeline reset is_active field to True via migration.
     run_once = False
-    # Interval between runs in hour.
-    run_interval = 24
+    # Interval between runs in minutes.
+    run_interval = 1440
     run_priority = PipelineSchedule.ExecutionPriority.DEFAULT
 
     @classmethod

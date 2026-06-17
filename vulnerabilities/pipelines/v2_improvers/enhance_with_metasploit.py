@@ -16,6 +16,7 @@ from aboutcode.pipeline import LoopProgress
 from dateutil import parser as dateparser
 
 from vulnerabilities.models import AdvisoryExploit
+from vulnerabilities.models import PipelineSchedule
 from vulnerabilities.pipelines import VulnerableCodePipeline
 from vulnerabilities.utils import build_alias_to_advisory_map
 
@@ -28,6 +29,10 @@ class MetasploitImproverPipeline(VulnerableCodePipeline):
 
     pipeline_id = "enhance_with_metasploit_v2"
     spdx_license_expression = "BSD-3-clause"
+
+    # Run pipeline every 30 minutes.
+    run_interval = 30
+    run_priority = PipelineSchedule.ExecutionPriority.HIGH
 
     @classmethod
     def steps(cls):

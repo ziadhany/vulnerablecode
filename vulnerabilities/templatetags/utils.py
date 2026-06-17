@@ -28,6 +28,11 @@ def humanize_duration(duration):
     return humanize_time(seconds=duration)
 
 
+@register.filter
+def humanize_minutes(duration):
+    return humanize_time(seconds=duration * 60)
+
+
 @register.simple_tag(takes_context=True)
 def active_item(context, url_name):
     """Return is-active if navbar item is active."""
@@ -64,3 +69,17 @@ def normalize_links(value):
 
     markdown_links = re.compile(r"\[([^\]]+)\]\((https?://[^\s)]+)\s*\)")
     return markdown_links.sub(r"\1 \2", value)
+
+
+@register.filter
+def humanize_interval(minutes):
+    """Humanize pipeline run interval."""
+    if minutes < 60:
+        unit = "minute" if minutes == 1 else "minutes"
+        return f"{minutes} {unit}"
+
+    hours = minutes / 60
+    value = int(hours) if hours.is_integer() else round(hours, 1)
+
+    unit = "hour" if value == 1 else "hours"
+    return f"{value} {unit}"

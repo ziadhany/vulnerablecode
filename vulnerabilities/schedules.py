@@ -29,7 +29,7 @@ def schedule_execution(pipeline_schedule, execute_now=False):
     if not execute_now:
         first_execution = pipeline_schedule.next_run_date
 
-    interval_in_seconds = pipeline_schedule.run_interval * 60 * 60
+    interval_in_seconds = pipeline_schedule.run_interval * 60
 
     job = scheduler.schedule(
         scheduled_time=first_execution,
@@ -97,7 +97,7 @@ def update_pipeline_schedule():
     PipelineSchedule.objects.exclude(pipeline_id__in=pipelines.keys()).delete()
     for id, pipeline_class in pipelines.items():
         run_once = getattr(pipeline_class, "run_once", False)
-        run_interval = getattr(pipeline_class, "run_interval", 24)
+        run_interval = getattr(pipeline_class, "run_interval", 1440)
         run_priority = getattr(
             pipeline_class, "run_priority", PipelineSchedule.ExecutionPriority.DEFAULT
         )
@@ -112,6 +112,7 @@ def update_pipeline_schedule():
         )
 
         if not created:
-            pipeline.run_priority = run_priority
-            pipeline.run_interval = run_interval
-            pipeline.save()
+            if pipeline.run_priority != run_priority or pipeline.run_interval != run_interval:
+                pipeline.run_priority = run_priority
+                pipeline.run_interval = run_interval
+                pipeline.save()

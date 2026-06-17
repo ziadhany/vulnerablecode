@@ -15,6 +15,7 @@ from vulnerabilities.models import AdvisoryReference
 from vulnerabilities.models import AdvisorySeverity
 from vulnerabilities.models import AdvisoryV2
 from vulnerabilities.models import PackageV2
+from vulnerabilities.models import PipelineSchedule
 from vulnerabilities.pipelines import VulnerableCodePipeline
 from vulnerabilities.pipes.risk_score import bulk_update
 from vulnerabilities.risk import compute_vulnerability_risk_factors
@@ -29,6 +30,10 @@ class ComputePackageRiskPipeline(VulnerableCodePipeline):
 
     pipeline_id = "compute_package_risk_v2"
     license_expression = None
+
+    # Run pipeline every 30 minutes.
+    run_interval = 30
+    run_priority = PipelineSchedule.ExecutionPriority.HIGH
 
     @classmethod
     def steps(cls):

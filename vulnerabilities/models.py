@@ -2302,13 +2302,15 @@ class PipelineSchedule(models.Model):
         ),
     )
 
-    run_interval = models.PositiveSmallIntegerField(
+    run_interval = models.IntegerField(
         validators=[
-            MinValueValidator(1, message="Interval must be at least 1 hour."),
-            MaxValueValidator(8760, message="Interval must be at most 8760 hours."),
+            MinValueValidator(5, message="Interval must be at least 5 minutes."),
+            MaxValueValidator(
+                43200, message="Interval must be at most 43200 minutes (i.e 30 days)."
+            ),
         ],
-        default=24,
-        help_text=("Number of hours to wait between run of this pipeline."),
+        default=1440,
+        help_text=("Number of minutes to wait between run of this pipeline."),
     )
 
     run_priority = models.IntegerField(

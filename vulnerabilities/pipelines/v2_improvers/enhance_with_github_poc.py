@@ -13,9 +13,7 @@ from pathlib import Path
 from aboutcode.pipeline import LoopProgress
 from fetchcode.vcs import fetch_via_vcs
 
-from vulnerabilities.models import AdvisoryAlias
 from vulnerabilities.models import AdvisoryPOC
-from vulnerabilities.models import AdvisoryV2
 from vulnerabilities.pipelines import VulnerableCodePipeline
 from vulnerabilities.utils import relate_aliases_with_advisories
 

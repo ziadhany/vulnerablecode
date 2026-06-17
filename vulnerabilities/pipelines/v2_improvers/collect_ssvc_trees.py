@@ -16,6 +16,7 @@ from django.db.models import Q
 from vulnerabilities.models import SSVC
 from vulnerabilities.models import AdvisorySeverity
 from vulnerabilities.models import AdvisoryV2
+from vulnerabilities.models import PipelineSchedule
 from vulnerabilities.pipelines import VulnerableCodePipeline
 from vulnerabilities.severity_systems import SCORING_SYSTEMS
 
@@ -30,6 +31,10 @@ class CollectSSVCPipeline(VulnerableCodePipeline):
     """
 
     pipeline_id = "collect_ssvc_trees"
+
+    # Run pipeline every 30 minutes.
+    run_interval = 30
+    run_priority = PipelineSchedule.ExecutionPriority.HIGH
 
     @classmethod
     def steps(cls):

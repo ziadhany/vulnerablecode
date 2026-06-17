@@ -14,6 +14,7 @@ import requests
 from aboutcode.pipeline import LoopProgress
 
 from vulnerabilities.models import AdvisoryExploit
+from vulnerabilities.models import PipelineSchedule
 from vulnerabilities.pipelines import VulnerableCodePipeline
 from vulnerabilities.utils import build_alias_to_advisory_map
 
@@ -26,6 +27,10 @@ class VulnerabilityKevPipeline(VulnerableCodePipeline):
 
     pipeline_id = "enhance_with_kev_v2"
     license_expression = None
+
+    # Run pipeline every 30 minutes.
+    run_interval = 30
+    run_priority = PipelineSchedule.ExecutionPriority.HIGH
 
     @classmethod
     def steps(cls):

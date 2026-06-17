@@ -788,7 +788,7 @@ class PipelineScheduleAPISerializer(serializers.HyperlinkedModelSerializer):
 
     def to_representation(self, schedule):
         representation = super().to_representation(schedule)
-        representation["run_interval"] = f"{schedule.run_interval}hr"
+        representation["run_interval"] = f"{schedule.run_interval}min"
         representation["execution_timeout"] = f"{schedule.execution_timeout}hr"
         return representation
 

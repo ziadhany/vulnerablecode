@@ -21,17 +21,12 @@ from packageurl import PackageURL
 from univers.version_range import RANGE_CLASS_BY_SCHEMES
 from univers.version_range import VersionRange
 
-from vulnerabilities.models import AdvisoryV2
 from vulnerabilities.models import ImpactedPackage
 from vulnerabilities.models import ImpactedPackageAffecting
-from vulnerabilities.models import ImpactedPackageFixedBy
 from vulnerabilities.models import PackageV2
 from vulnerabilities.models import PipelineSchedule
 from vulnerabilities.pipelines import VulnerableCodePipeline
 from vulnerabilities.pipes.fetchcode_utils import get_versions
-from vulnerabilities.pipes.group_advisories import group_advisory_for_package
-from vulnerabilities.pipes.risk_score import compute_package_risk_score_bulk
-from vulnerabilities.utils import TYPES_WITH_MULTIPLE_IMPORTERS
 from vulnerabilities.utils import update_purl_version
 
 
@@ -44,7 +39,8 @@ class UnfurlVersionRangePipeline(VulnerableCodePipeline):
 
     pipeline_id = "unfurl_version_range_v2"
 
-    run_interval = 1
+    # Run pipeline every 10 minutes.
+    run_interval = 10
     run_priority = PipelineSchedule.ExecutionPriority.HIGH
 
     # Days elapsed before version range is re-unfurled
