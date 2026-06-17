@@ -16,7 +16,6 @@ from typing import List
 from cvss.exceptions import CVSS2MalformedError
 from cvss.exceptions import CVSS3MalformedError
 from cvss.exceptions import CVSS4MalformedError
-from django import forms
 from django.contrib import messages
 from django.contrib.auth.views import LoginView
 from django.core.cache import cache
@@ -29,7 +28,6 @@ from django.db.models import Q
 from django.http import HttpResponse
 from django.http.response import Http404
 from django.shortcuts import get_object_or_404
-from django.shortcuts import redirect
 from django.shortcuts import render
 from django.urls import reverse_lazy
 from django.views import View
@@ -38,7 +36,6 @@ from django.views.generic.detail import DetailView
 from django.views.generic.edit import FormMixin
 from django.views.generic.edit import FormView
 from django.views.generic.list import ListView
-from django_altcha import AltchaField
 
 from vulnerabilities import models
 from vulnerabilities.forms import AdminLoginForm
@@ -67,6 +64,7 @@ from vulnerabilities.tasks import compute_queue_load_factor
 from vulnerabilities.throttling import AnonUserUIThrottle
 from vulnerabilities.utils import TYPES_WITH_MULTIPLE_IMPORTERS
 from vulnerabilities.utils import get_advisories_from_groups
+from vulnerabilities.utils import safe_altcha_redirect
 from vulnerablecode import __version__ as VULNERABLECODE_VERSION
 from vulnerablecode.settings import env
 
@@ -1173,7 +1171,7 @@ class AltchaView(FormView):
         if verified_at:
             if time.time() - verified_at < ALTCHA_SESSION_TIMEOUT:
                 next_url = request.GET.get("next", "/")
-                return redirect(next_url)
+                return safe_altcha_redirect(next_url)
 
         return super().dispatch(request, *args, **kwargs)
 
@@ -1181,4 +1179,4 @@ class AltchaView(FormView):
         self.request.session["altcha_verified_at"] = time.time()
 
         next_url = self.request.GET.get("next", "/")
-        return redirect(next_url)
+        return safe_altcha_redirect(next_url)

@@ -20,12 +20,11 @@ from collections import defaultdict
 from functools import total_ordering
 from http import HTTPStatus
 from typing import List
-from typing import NamedTuple
 from typing import Optional
-from typing import Set
 from typing import Tuple
 from typing import Union
 from unittest.mock import MagicMock
+from urllib.parse import unquote
 from urllib.parse import urljoin
 
 import dateparser
@@ -36,6 +35,8 @@ import urllib3
 from cwe2.database import Database
 from cwe2.database import InvalidCWEError
 from django.db.models import Prefetch
+from django.shortcuts import redirect
+from django.utils.http import url_has_allowed_host_and_scheme
 from packageurl import PackageURL
 from packageurl.contrib.django.utils import without_empty_values
 from univers.version_range import RANGE_CLASS_BY_SCHEMES
@@ -44,6 +45,7 @@ from univers.version_range import NginxVersionRange
 from univers.version_range import VersionRange
 
 from aboutcode.hashid import build_vcid
+from vulnerabilities.middleware.altcha_protection import ALTCHA_PROTECTED_PREFIXES
 
 logger = logging.getLogger(__name__)
 
@@ -1114,3 +1116,16 @@ def build_alias_to_advisory_map(aliases_strs):
     ):
         alias_to_advisories[advisory.advisory_id].add(advisory)
     return alias_to_advisories
+
+
+def safe_altcha_redirect(next_url: str) -> redirect:
+    """Safely redirect to Altcha protected URL, block external URLs."""
+    is_safe = url_has_allowed_host_and_scheme(url=next_url, allowed_hosts=None, require_https=False)
+
+    decoded_url = unquote(next_url) if next_url else ""
+    is_protected = any(decoded_url.startswith(prefix) for prefix in ALTCHA_PROTECTED_PREFIXES)
+
+    if is_safe and is_protected:
+        return redirect(next_url)
+
+    return redirect("/")

@@ -15,19 +15,20 @@ from django.utils.deprecation import MiddlewareMixin
 
 SESSION_TIMEOUT = 900  # 15 minutes
 
+ALTCHA_PROTECTED_PREFIXES = (
+    "/packages/",
+    "/vulnerabilities/",
+    "/advisories/",
+    "/affected-by-advisories/v2/",
+    "/fixing-advisories/v2/",
+    "/pipelines/",
+)
+
 
 class AltchaProtectionMiddleware(MiddlewareMixin):
-    PROTECTED_PREFIXES = (
-        "/packages/",
-        "/vulnerabilities/",
-        "/advisories/",
-        "/affected-by-advisories/v2/",
-        "/fixing-advisories/v2/",
-        "/pipelines/",
-    )
 
     def __call__(self, request):
-        protected = any(request.path.startswith(prefix) for prefix in self.PROTECTED_PREFIXES)
+        protected = any(request.path.startswith(prefix) for prefix in ALTCHA_PROTECTED_PREFIXES)
 
         if not protected:
             return self.get_response(request)
