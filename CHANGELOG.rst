@@ -1,7 +1,7 @@
 Release notes
 =============
 
-next release
+Version v39.0.0
 ---------------------
 
 - WARNING: Vulnerablecode V1 API and UI has stopped supporting Ubuntu OVAL advisories, please shift to V3 API for new Ubuntu advisories.
@@ -10,6 +10,23 @@ next release
 - We will group advisories for packages and calculate package risk score and advisory risk score only when an advisory is completely unfurled,
   this will improve consistency of the data. In future if we change our grouping approach we have to make a migration to mark all advisories 
   as not unfurled, so they can be goruped again with the new algo.
+- Create a pipeline to continuously collect various URLs and archive them #2233.
+- Add GitHub PoC collector #2024.
+- Collect existing fix commits for Linux Kernel #1989.
+- Add support for Reference Fix Commits improver #2163.
+- Add support for glib importer #2118.
+- Update federated library to work with the latest federation config #2310.
+- Add datasource ID #2309.
+- feat: add UI to expose curation queue 
+- Add support for parsing Git commit messages 
+- Add curation dashboard to resolve conflicting package version range 
+- Change architecture to import and marking advisories as usable 
+- Correct logic for non vuln versions 
+- Fix exploit ehancement pipelines 
+- Add a user agent with documentation 
+- Increase frequency and priority for critical pipelines 
+- Add ALTCHA verification in UI 
+- Add API/ UI support for Patch/PackageCommitPatch
 
 
 Version v38.6.0
