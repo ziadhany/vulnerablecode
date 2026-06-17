@@ -27,6 +27,7 @@ Version v39.0.0
 - Increase frequency and priority for critical pipelines 
 - Add ALTCHA verification in UI 
 - Add API/ UI support for Patch/PackageCommitPatch
+- Fix failing V2 pipelinea
 
 
 Version v38.6.0

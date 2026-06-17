@@ -80,9 +80,12 @@ class CollectSSVCPipeline(VulnerableCodePipeline):
                     advisory_map[alias.alias].add(adv)
 
         existing_ssvc = {
-            s.source_advisory_id: s
+            (s.source_advisory_id, s.vector): s
             for s in SSVC.objects.filter(source_advisory_id__in=[a.id for a in advisories])
         }
+
+        self.log(f"Existing SSVC rows found: {len(existing_ssvc)}")
+        self.log(f"Advisories to process: {len(advisories)}")
 
         to_create = []
         to_update = []
@@ -99,7 +102,9 @@ class CollectSSVCPipeline(VulnerableCodePipeline):
                     if not (ssvc_tree and decision):
                         continue
 
-                    existing = existing_ssvc.get(advisory.id)
+                    key = (advisory.id, ssvc_vector)
+
+                    existing = existing_ssvc.get(key)
 
                     if existing:
                         existing.options = ssvc_tree
@@ -131,33 +136,31 @@ class CollectSSVCPipeline(VulnerableCodePipeline):
         )
 
         # Refresh newly created IDs
-        created_ssvc = {
-            s.source_advisory_id: s
-            for s in SSVC.objects.filter(source_advisory_id__in=[a.id for a in advisories])
-        }
+        created_ssvc = defaultdict(list)
+
+        for s in SSVC.objects.filter(source_advisory_id__in=[a.id for a in advisories]):
+            created_ssvc[s.source_advisory_id].append(s)
 
         through_model = SSVC.related_advisories.through
 
         through_rows = []
 
         for advisory in advisories:
-            ssvc_obj = created_ssvc.get(advisory.id)
-
-            if not ssvc_obj:
-                continue
+            ssvc_objs = created_ssvc.get(advisory.id, [])
 
             related = advisory_map.get(advisory.advisory_id, set())
 
-            for related_adv in related:
-                if related_adv.id == advisory.id:
-                    continue
+            for ssvc_obj in ssvc_objs:
+                for related_adv in related:
+                    if related_adv.id == advisory.id:
+                        continue
 
-                through_rows.append(
-                    through_model(
-                        ssvc_id=ssvc_obj.id,
-                        advisoryv2_id=related_adv.id,
+                    through_rows.append(
+                        through_model(
+                            ssvc_id=ssvc_obj.id,
+                            advisoryv2_id=related_adv.id,
+                        )
                     )
-                )
 
         through_model.objects.bulk_create(
             through_rows,
