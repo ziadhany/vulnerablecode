@@ -22,7 +22,7 @@ class TestAltchaProtectionMiddleware:
         response = client.get("/packages/search/")
 
         assert response.status_code == 302
-        assert response.url == "/altcha/"
+        assert response.url == "/altcha/?next=%2Fpackages%2Fsearch%2F"
 
     def test_unprotected_url_is_accessible(self, client):
         response = client.get("/")
@@ -46,7 +46,7 @@ class TestAltchaProtectionMiddleware:
         response = client.get("/packages/search/")
 
         assert response.status_code == 302
-        assert response.url == "/altcha/"
+        assert response.url == "/altcha/?next=%2Fpackages%2Fsearch%2F"
 
     def test_expired_session_is_removed(self, client):
         session = client.session
