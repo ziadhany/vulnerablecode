@@ -183,9 +183,7 @@ class TestSerializers(TransactionTestCase):
     def test_package_serializer(self):
         pk = Package.objects.filter(name="mimetex").with_is_vulnerable()
         mock_request = RequestFactory().get("/api")
-        response = PackageSerializer(
-            pk, many=True, context={"request": mock_request}, HTTP_USER_AGENT="VCIO_API_AGENT"
-        ).data
+        response = PackageSerializer(pk, many=True, context={"request": mock_request}).data
         self.assertEqual(1, len(response))
 
         first_result = response[0]

@@ -56,6 +56,20 @@ class APIV3TestCase(APITestCase):
 
         self.client = APIClient(enforce_csrf_checks=True)
 
+        self.allow_request_patcher = patch(
+            "vulnerabilities.throttling.PermissionBasedUserRateThrottle.allow_request",
+            return_value=True,
+        )
+        self.allow_request_patcher.start()
+        self.addCleanup(self.allow_request_patcher.stop)
+
+        self.anon_patcher = patch(
+            "rest_framework.throttling.AnonRateThrottle.allow_request",
+            return_value=True,
+        )
+        self.anon_patcher.start()
+        self.addCleanup(self.anon_patcher.stop)
+
     def test_packages_post_without_details(self):
         url = reverse("package-v3-list")
 
@@ -199,6 +213,19 @@ class APIV3TestCaseOnePackageMultipleAdvisories(APITestCase):
             advisory_obj.save()
 
         self.client = APIClient(enforce_csrf_checks=True)
+        self.allow_request_patcher = patch(
+            "vulnerabilities.throttling.PermissionBasedUserRateThrottle.allow_request",
+            return_value=True,
+        )
+        self.allow_request_patcher.start()
+        self.addCleanup(self.allow_request_patcher.stop)
+
+        self.anon_patcher = patch(
+            "rest_framework.throttling.AnonRateThrottle.allow_request",
+            return_value=True,
+        )
+        self.anon_patcher.start()
+        self.addCleanup(self.anon_patcher.stop)
 
     def test_advisories_post(self):
         url = reverse("advisory-v3-list")
@@ -247,6 +274,20 @@ class APIV3TestCaseOneAdvisoryMultiplePackages(APITestCase):
 
         self.client = APIClient(enforce_csrf_checks=True)
 
+        self.allow_request_patcher = patch(
+            "vulnerabilities.throttling.PermissionBasedUserRateThrottle.allow_request",
+            return_value=True,
+        )
+        self.allow_request_patcher.start()
+        self.addCleanup(self.allow_request_patcher.stop)
+
+        self.anon_patcher = patch(
+            "rest_framework.throttling.AnonRateThrottle.allow_request",
+            return_value=True,
+        )
+        self.anon_patcher.start()
+        self.addCleanup(self.anon_patcher.stop)
+
     def test_get_all_vulnerable_purls(self):
         url = reverse("package-v3-list")
 
@@ -292,6 +333,20 @@ class PackageCommitPatchTests(APITestCase):
             ],
             url="https://github.com/aboutcode-org/sample",
         )
+
+        self.allow_request_patcher = patch(
+            "vulnerabilities.throttling.PermissionBasedUserRateThrottle.allow_request",
+            return_value=True,
+        )
+        self.allow_request_patcher.start()
+        self.addCleanup(self.allow_request_patcher.stop)
+
+        self.anon_patcher = patch(
+            "rest_framework.throttling.AnonRateThrottle.allow_request",
+            return_value=True,
+        )
+        self.anon_patcher.start()
+        self.addCleanup(self.anon_patcher.stop)
 
         self.advisory = insert_advisory_v2(self.advisory, "importer_1", print, 100)
         self.advisory.is_latest = True
@@ -355,6 +410,20 @@ class PackageCommitPatchComplexTest(APITestCase):
             package_url="pkg:pypi/sample@1.0.0",
             defaults={"name": "sample", "type": "pypi", "version": "1.0.0"},
         )
+
+        self.allow_request_patcher = patch(
+            "vulnerabilities.throttling.PermissionBasedUserRateThrottle.allow_request",
+            return_value=True,
+        )
+        self.allow_request_patcher.start()
+        self.addCleanup(self.allow_request_patcher.stop)
+
+        self.anon_patcher = patch(
+            "rest_framework.throttling.AnonRateThrottle.allow_request",
+            return_value=True,
+        )
+        self.anon_patcher.start()
+        self.addCleanup(self.anon_patcher.stop)
 
         self.advisory_data = AdvisoryDataV2(
             advisory_id="AVID-123",
@@ -490,6 +559,21 @@ class PackageCommitPatchComplexTest(APITestCase):
 
 
 class TestPackageTypesView(APITestCase):
+    def setUp(self):
+        self.allow_request_patcher = patch(
+            "vulnerabilities.throttling.PermissionBasedUserRateThrottle.allow_request",
+            return_value=True,
+        )
+        self.allow_request_patcher.start()
+        self.addCleanup(self.allow_request_patcher.stop)
+
+        self.anon_patcher = patch(
+            "rest_framework.throttling.AnonRateThrottle.allow_request",
+            return_value=True,
+        )
+        self.anon_patcher.start()
+        self.addCleanup(self.anon_patcher.stop)
+
     def test_returns_distinct_types_and_caches_response(self):
         cache.delete("package_types")
 
