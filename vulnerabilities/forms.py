@@ -136,4 +136,4 @@ class AdvisoryToDoForm(forms.Form):
 
 
 class AltchaForm(forms.Form):
-    altcha = AltchaField()
+    altcha = AltchaField(auto="onload")
