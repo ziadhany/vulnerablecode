@@ -75,7 +75,7 @@ class VulnerabilityV2ViewSetTest(APITestCase):
         url = reverse("vulnerability-v2-list")
         response = self.client.get(url, format="json")
         with self.assertNumQueries(4):
-            response = self.client.get(url, format="json")
+            response = self.client.get(url, format="json", HTTP_USER_AGENT="VCIO_API_AGENT")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertIn("results", response.data)
         self.assertIn("vulnerabilities", response.data["results"])
@@ -90,7 +90,7 @@ class VulnerabilityV2ViewSetTest(APITestCase):
         """
         url = reverse("vulnerability-v2-detail", kwargs={"vulnerability_id": "VCID-1234"})
         with self.assertNumQueries(7):
-            response = self.client.get(url, format="json")
+            response = self.client.get(url, format="json", HTTP_USER_AGENT="VCIO_API_AGENT")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["vulnerability_id"], "VCID-1234")
         self.assertEqual(response.data["summary"], "Test vulnerability 1")
@@ -104,7 +104,12 @@ class VulnerabilityV2ViewSetTest(APITestCase):
         """
         url = reverse("vulnerability-v2-list")
         with self.assertNumQueries(3):
-            response = self.client.get(url, {"vulnerability_id": "VCID-1234"}, format="json")
+            response = self.client.get(
+                url,
+                {"vulnerability_id": "VCID-1234"},
+                format="json",
+                HTTP_USER_AGENT="VCIO_API_AGENT",
+            )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["vulnerability_id"], "VCID-1234")
 
@@ -114,7 +119,12 @@ class VulnerabilityV2ViewSetTest(APITestCase):
         """
         url = reverse("vulnerability-v2-list")
         with self.assertNumQueries(4):
-            response = self.client.get(url, {"alias": "CVE-2021-5678"}, format="json")
+            response = self.client.get(
+                url,
+                {"alias": "CVE-2021-5678"},
+                format="json",
+                HTTP_USER_AGENT="VCIO_API_AGENT",
+            )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertIn("results", response.data)
         self.assertIn("vulnerabilities", response.data["results"])
@@ -130,7 +140,10 @@ class VulnerabilityV2ViewSetTest(APITestCase):
         url = reverse("vulnerability-v2-list")
         with self.assertNumQueries(4):
             response = self.client.get(
-                url, {"vulnerability_id": ["VCID-1234", "VCID-5678"]}, format="json"
+                url,
+                {"vulnerability_id": ["VCID-1234", "VCID-5678"]},
+                format="json",
+                HTTP_USER_AGENT="VCIO_API_AGENT",
             )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data["results"]["vulnerabilities"]), 2)
@@ -142,7 +155,10 @@ class VulnerabilityV2ViewSetTest(APITestCase):
         url = reverse("vulnerability-v2-list")
         with self.assertNumQueries(4):
             response = self.client.get(
-                url, {"alias": ["CVE-2021-1234", "CVE-2021-5678"]}, format="json"
+                url,
+                {"alias": ["CVE-2021-1234", "CVE-2021-5678"]},
+                format="json",
+                HTTP_USER_AGENT="VCIO_API_AGENT",
             )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data["results"]["vulnerabilities"]), 2)
@@ -154,7 +170,11 @@ class VulnerabilityV2ViewSetTest(APITestCase):
         """
         url = reverse("vulnerability-v2-detail", kwargs={"vulnerability_id": "VCID-9999"})
         with self.assertNumQueries(4):
-            response = self.client.get(url, format="json")
+            response = self.client.get(
+                url,
+                format="json",
+                HTTP_USER_AGENT="VCIO_API_AGENT",
+            )
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
     def test_get_url_in_serializer(self):
@@ -177,7 +197,11 @@ class VulnerabilityV2ViewSetTest(APITestCase):
             )
 
         url = reverse("vulnerability-v2-list")
-        response = self.client.get(url, format="json")
+        response = self.client.get(
+            url,
+            format="json",
+            HTTP_USER_AGENT="VCIO_API_AGENT",
+        )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertIn("results", response.data)
         self.assertIn("vulnerabilities", response.data["results"])
@@ -221,7 +245,11 @@ class PackageV2ViewSetTest(APITestCase):
         """
         url = reverse("package-v2-list")
         with self.assertNumQueries(31):
-            response = self.client.get(url, format="json")
+            response = self.client.get(
+                url,
+                format="json",
+                HTTP_USER_AGENT="VCIO_API_AGENT",
+            )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertIn("results", response.data)
         self.assertIn("packages", response.data["results"])
@@ -243,7 +271,12 @@ class PackageV2ViewSetTest(APITestCase):
         """
         url = reverse("package-v2-list")
         with self.assertNumQueries(19):
-            response = self.client.get(url, {"purl": "pkg:pypi/django@3.2"}, format="json")
+            response = self.client.get(
+                url,
+                {"purl": "pkg:pypi/django@3.2"},
+                format="json",
+                HTTP_USER_AGENT="VCIO_API_AGENT",
+            )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data["results"]["packages"]), 1)
         self.assertEqual(response.data["results"]["packages"][0]["purl"], "pkg:pypi/django@3.2")
@@ -255,7 +288,10 @@ class PackageV2ViewSetTest(APITestCase):
         url = reverse("package-v2-list")
         with self.assertNumQueries(19):
             response = self.client.get(
-                url, {"affected_by_vulnerability": "VCID-1234"}, format="json"
+                url,
+                {"affected_by_vulnerability": "VCID-1234"},
+                format="json",
+                HTTP_USER_AGENT="VCIO_API_AGENT",
             )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data["results"]["packages"]), 1)
@@ -267,7 +303,12 @@ class PackageV2ViewSetTest(APITestCase):
         """
         url = reverse("package-v2-list")
         with self.assertNumQueries(17):
-            response = self.client.get(url, {"fixing_vulnerability": "VCID-5678"}, format="json")
+            response = self.client.get(
+                url,
+                {"fixing_vulnerability": "VCID-5678"},
+                format="json",
+                HTTP_USER_AGENT="VCIO_API_AGENT",
+            )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data["results"]["packages"]), 1)
         self.assertEqual(response.data["results"]["packages"][0]["purl"], "pkg:npm/lodash@4.17.20")
@@ -338,7 +379,7 @@ class PackageV2ViewSetTest(APITestCase):
             )
 
         url = reverse("package-v2-list")
-        response = self.client.get(url, format="json")
+        response = self.client.get(url, format="json", HTTP_USER_AGENT="VCIO_API_AGENT")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertIn("results", response.data)
         self.assertIn("packages", response.data["results"])
@@ -357,7 +398,10 @@ class PackageV2ViewSetTest(APITestCase):
         url = reverse("package-v2-list")
         with self.assertNumQueries(3):
             response = self.client.get(
-                url, {"affected_by_vulnerability": "VCID-9999"}, format="json"
+                url,
+                {"affected_by_vulnerability": "VCID-9999"},
+                format="json",
+                HTTP_USER_AGENT="VCIO_API_AGENT",
             )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data["results"]["packages"]), 0)
@@ -370,7 +414,10 @@ class PackageV2ViewSetTest(APITestCase):
         url = reverse("package-v2-list")
         with self.assertNumQueries(3):
             response = self.client.get(
-                url, {"purl": "pkg:nonexistent/package@1.0.0"}, format="json"
+                url,
+                {"purl": "pkg:nonexistent/package@1.0.0"},
+                format="json",
+                HTTP_USER_AGENT="VCIO_API_AGENT",
             )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data["results"]["packages"]), 0)
@@ -421,7 +468,7 @@ class PackageV2ViewSetTest(APITestCase):
         url = reverse("package-v2-bulk-lookup")
         data = {"purls": ["pkg:pypi/django@3.2", "pkg:npm/lodash@4.17.20"]}
         with self.assertNumQueries(27):
-            response = self.client.post(url, data, format="json")
+            response = self.client.post(url, data, format="json", HTTP_USER_AGENT="VCIO_API_AGENT")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertIn("packages", response.data)
         self.assertIn("vulnerabilities", response.data)
@@ -446,7 +493,7 @@ class PackageV2ViewSetTest(APITestCase):
         url = reverse("package-v2-bulk-lookup")
         data = {"purls": ["pkg:pypi/nonexistent@1.0.0", "pkg:npm/unknown@0.0.1"]}
         with self.assertNumQueries(3):
-            response = self.client.post(url, data, format="json")
+            response = self.client.post(url, data, format="json", HTTP_USER_AGENT="VCIO_API_AGENT")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         # Since the packages don't exist, the response should be empty
         self.assertEqual(len(response.data["packages"]), 0)
@@ -460,7 +507,7 @@ class PackageV2ViewSetTest(APITestCase):
         url = reverse("package-v2-bulk-lookup")
         data = {"purls": []}
         with self.assertNumQueries(2):
-            response = self.client.post(url, data, format="json")
+            response = self.client.post(url, data, format="json", HTTP_USER_AGENT="VCIO_API_AGENT")
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn("error", response.data)
         self.assertIn("message", response.data)
@@ -474,7 +521,7 @@ class PackageV2ViewSetTest(APITestCase):
         url = reverse("package-v2-bulk-search")
         data = {"purls": ["pkg:pypi/django@3.2", "pkg:npm/lodash@4.17.20"]}
         with self.assertNumQueries(27):
-            response = self.client.post(url, data, format="json")
+            response = self.client.post(url, data, format="json", HTTP_USER_AGENT="VCIO_API_AGENT")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertIn("packages", response.data)
         self.assertIn("vulnerabilities", response.data)
@@ -502,7 +549,7 @@ class PackageV2ViewSetTest(APITestCase):
             "purl_only": True,
         }
         with self.assertNumQueries(16):
-            response = self.client.post(url, data, format="json")
+            response = self.client.post(url, data, format="json", HTTP_USER_AGENT="VCIO_API_AGENT")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         # Since purl_only=True, response should be a list of PURLs
         self.assertIsInstance(response.data, list)
@@ -529,7 +576,7 @@ class PackageV2ViewSetTest(APITestCase):
             "plain_purl": True,
         }
         with self.assertNumQueries(15):
-            response = self.client.post(url, data, format="json")
+            response = self.client.post(url, data, format="json", HTTP_USER_AGENT="VCIO_API_AGENT")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertIn("packages", response.data)
         self.assertIn("vulnerabilities", response.data)
@@ -550,7 +597,7 @@ class PackageV2ViewSetTest(APITestCase):
             "plain_purl": True,
         }
         with self.assertNumQueries(10):
-            response = self.client.post(url, data, format="json")
+            response = self.client.post(url, data, format="json", HTTP_USER_AGENT="VCIO_API_AGENT")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         # Response should be a list of plain PURLs
         self.assertIsInstance(response.data, list)
@@ -566,7 +613,7 @@ class PackageV2ViewSetTest(APITestCase):
         url = reverse("package-v2-bulk-search")
         data = {"purls": ["pkg:pypi/nonexistent@1.0.0", "pkg:npm/unknown@0.0.1"]}
         with self.assertNumQueries(3):
-            response = self.client.post(url, data, format="json")
+            response = self.client.post(url, data, format="json", HTTP_USER_AGENT="VCIO_API_AGENT")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         # Since the packages don't exist, the response should be empty
         self.assertEqual(len(response.data["packages"]), 0)
@@ -580,7 +627,7 @@ class PackageV2ViewSetTest(APITestCase):
         url = reverse("package-v2-bulk-search")
         data = {"purls": []}
         with self.assertNumQueries(2):
-            response = self.client.post(url, data, format="json")
+            response = self.client.post(url, data, format="json", HTTP_USER_AGENT="VCIO_API_AGENT")
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn("error", response.data)
         self.assertIn("message", response.data)
@@ -592,7 +639,7 @@ class PackageV2ViewSetTest(APITestCase):
         """
         url = reverse("package-v2-all")
         with self.assertNumQueries(3):
-            response = self.client.get(url, format="json")
+            response = self.client.get(url, format="json", HTTP_USER_AGENT="VCIO_API_AGENT")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         # Since package1 is vulnerable, it should be returned
         expected_purls = ["pkg:pypi/django@3.2"]
@@ -606,7 +653,7 @@ class PackageV2ViewSetTest(APITestCase):
         url = reverse("package-v2-lookup")
         data = {"purl": "pkg:pypi/django@3.2"}
         with self.assertNumQueries(12):
-            response = self.client.post(url, data, format="json")
+            response = self.client.post(url, data, format="json", HTTP_USER_AGENT="VCIO_API_AGENT")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(1, len(response.data))
         self.assertIn("purl", response.data[0])
@@ -635,7 +682,7 @@ class PackageV2ViewSetTest(APITestCase):
         url = reverse("package-v2-lookup")
         data = {"purl": "pkg:pypi/nonexistent@1.0.0"}
         with self.assertNumQueries(3):
-            response = self.client.post(url, data, format="json")
+            response = self.client.post(url, data, format="json", HTTP_USER_AGENT="VCIO_API_AGENT")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         # No packages or vulnerabilities should be returned
         self.assertEqual(len(response.data), 0)
@@ -648,7 +695,7 @@ class PackageV2ViewSetTest(APITestCase):
         url = reverse("package-v2-lookup")
         data = {}
         with self.assertNumQueries(2):
-            response = self.client.post(url, data, format="json")
+            response = self.client.post(url, data, format="json", HTTP_USER_AGENT="VCIO_API_AGENT")
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn("error", response.data)
         self.assertIn("message", response.data)
@@ -662,7 +709,7 @@ class PackageV2ViewSetTest(APITestCase):
         url = reverse("package-v2-lookup")
         data = {"purl": "invalid_purl_format"}
         with self.assertNumQueries(3):
-            response = self.client.post(url, data, format="json")
+            response = self.client.post(url, data, format="json", HTTP_USER_AGENT="VCIO_API_AGENT")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         # No packages or vulnerabilities should be returned
         self.assertEqual(len(response.data), 0)
@@ -702,11 +749,13 @@ class PipelineScheduleV2ViewSetTest(APITestCase):
         self.admin_token_auth = f"Token {self.admin_token_only_user.auth_token.key}"
 
     def test_schedule_list_anon_user_permitted(self):
-        response = self.client.get("/api/v2/pipelines/")
+        response = self.client.get("/api/v2/pipelines/", HTTP_USER_AGENT="VCIO_API_AGENT")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def test_schedule_retrieve_anon_user_permitted(self):
-        response = self.client.get("/api/v2/pipelines/test_pipeline/")
+        response = self.client.get(
+            "/api/v2/pipelines/test_pipeline/", HTTP_USER_AGENT="VCIO_API_AGENT"
+        )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     @patch("vulnerabilities.models.PipelineSchedule.create_new_job")
@@ -714,7 +763,9 @@ class PipelineScheduleV2ViewSetTest(APITestCase):
         mock_create_new_job.return_value = "work-id2"
 
         data = {"pipeline_id": "test_pipeline2"}
-        response = self.client.post("/api/v2/pipelines/", data, format="json")
+        response = self.client.post(
+            "/api/v2/pipelines/", data, format="json", HTTP_USER_AGENT="VCIO_API_AGENT"
+        )
 
         self.assertNotEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
@@ -728,7 +779,9 @@ class PipelineScheduleV2ViewSetTest(APITestCase):
         mock_create_new_job.return_value = "work-id3"
 
         data = {"pipeline_id": "test_pipeline3"}
-        response = self.client.post("/api/v2/pipelines/", data, format="json")
+        response = self.client.post(
+            "/api/v2/pipelines/", data, format="json", HTTP_USER_AGENT="VCIO_API_AGENT"
+        )
 
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
         self.assertNotEqual(response.status_code, status.HTTP_201_CREATED)
@@ -740,7 +793,9 @@ class PipelineScheduleV2ViewSetTest(APITestCase):
         self.client.login(username="admin_with_session", password="adminpassword")
 
         data = {"pipeline_id": "test_pipeline3"}
-        response = self.client.post("/api/v2/pipelines/", data, format="json")
+        response = self.client.post(
+            "/api/v2/pipelines/", data, format="json", HTTP_USER_AGENT="VCIO_API_AGENT"
+        )
 
         self.assertNotEqual(response.status_code, status.HTTP_403_FORBIDDEN)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
@@ -751,7 +806,12 @@ class PipelineScheduleV2ViewSetTest(APITestCase):
         mock_create_new_job.return_value = "work-id5"
 
         data = {"run_interval": 2}
-        response = self.client.patch("/api/v2/pipelines/test_pipeline/", data, format="json")
+        response = self.client.patch(
+            "/api/v2/pipelines/test_pipeline/",
+            data,
+            format="json",
+            HTTP_USER_AGENT="VCIO_API_AGENT",
+        )
         self.schedule1.refresh_from_db()
 
         self.assertNotEqual(response.status_code, status.HTTP_200_OK)
@@ -766,7 +826,12 @@ class PipelineScheduleV2ViewSetTest(APITestCase):
         mock_create_new_job.return_value = "work-id6"
 
         data = {"run_interval": 2}
-        response = self.client.patch("/api/v2/pipelines/test_pipeline/", data, format="json")
+        response = self.client.patch(
+            "/api/v2/pipelines/test_pipeline/",
+            data,
+            format="json",
+            HTTP_USER_AGENT="VCIO_API_AGENT",
+        )
         self.schedule1.refresh_from_db()
 
         self.assertNotEqual(response.status_code, status.HTTP_200_OK)
@@ -779,7 +844,12 @@ class PipelineScheduleV2ViewSetTest(APITestCase):
         self.client.login(username="admin_with_session", password="adminpassword")
 
         data = {"run_interval": 5}
-        response = self.client.patch("/api/v2/pipelines/test_pipeline/", data, format="json")
+        response = self.client.patch(
+            "/api/v2/pipelines/test_pipeline/",
+            data,
+            format="json",
+            HTTP_USER_AGENT="VCIO_API_AGENT",
+        )
         self.schedule1.refresh_from_db()
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -818,20 +888,26 @@ class CodeFixV2APITest(APITestCase):
 
     def test_list_all_codefixes(self):
         with self.assertNumQueries(10):
-            response = self.client.get(self.url)
+            response = self.client.get(self.url, HTTP_USER_AGENT="VCIO_API_AGENT")
         assert response.status_code == status.HTTP_200_OK
         assert response.data["count"] == 1
         assert response.data["results"][0]["affected_advisory_id"] == self.advisory.avid
 
     def test_filter_codefix_by_advisory_id_success(self):
         with self.assertNumQueries(10):
-            response = self.client.get(self.url, {"advisory_id": self.advisory.avid})
+            response = self.client.get(
+                self.url, {"advisory_id": self.advisory.avid}, HTTP_USER_AGENT="VCIO_API_AGENT"
+            )
         assert response.status_code == status.HTTP_200_OK
         assert response.data["count"] == 1
         assert response.data["results"][0]["affected_advisory_id"] == self.advisory.avid
 
     def test_filter_codefix_by_advisory_id_not_found(self):
         with self.assertNumQueries(6):
-            response = self.client.get(self.url, {"advisory_id": "nonexistent/ADVISORY-ID"})
+            response = self.client.get(
+                self.url,
+                {"advisory_id": "nonexistent/ADVISORY-ID"},
+                HTTP_USER_AGENT="VCIO_API_AGENT",
+            )
         assert response.status_code == status.HTTP_200_OK
         assert response.data["count"] == 0

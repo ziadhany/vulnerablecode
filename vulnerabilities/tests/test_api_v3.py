@@ -67,6 +67,7 @@ class APIV3TestCase(APITestCase):
                     "details": False,
                 },
                 format="json",
+                HTTP_USER_AGENT="VCIO_API_AGENT",
             )
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -86,6 +87,7 @@ class APIV3TestCase(APITestCase):
                     "details": True,
                 },
                 format="json",
+                HTTP_USER_AGENT="VCIO_API_AGENT",
             )
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -101,6 +103,7 @@ class APIV3TestCase(APITestCase):
                 url,
                 data={"purls": ["pkg:pypi/sample@1.0.0"]},
                 format="json",
+                HTTP_USER_AGENT="VCIO_API_AGENT",
             )
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -114,8 +117,7 @@ class APIV3TestCase(APITestCase):
 
         with self.assertNumQueries(11):
             response = self.client.get(
-                url,
-                {"purl": "pkg:pypi/sample@1.0.0"},
+                url, {"purl": "pkg:pypi/sample@1.0.0"}, HTTP_USER_AGENT="VCIO_API_AGENT"
             )
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -129,8 +131,7 @@ class APIV3TestCase(APITestCase):
 
         with self.assertNumQueries(3):
             response = self.client.get(
-                url,
-                {"purl": "pkg:pypi/sample@1.0.0"},
+                url, {"purl": "pkg:pypi/sample@1.0.0"}, HTTP_USER_AGENT="VCIO_API_AGENT"
             )
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -140,9 +141,7 @@ class APIV3TestCase(APITestCase):
         url = reverse("package-v3-list")
 
         response = self.client.post(
-            url,
-            data={"purls": []},
-            format="json",
+            url, data={"purls": []}, format="json", HTTP_USER_AGENT="VCIO_API_AGENT"
         )
 
         self.assertEqual(response.status_code, 200)
@@ -163,6 +162,7 @@ class APIV3TestCase(APITestCase):
                 "details": False,
             },
             format="json",
+            HTTP_USER_AGENT="VCIO_API_AGENT",
         )
 
         self.assertEqual(response.status_code, 200)
@@ -208,6 +208,7 @@ class APIV3TestCaseOnePackageMultipleAdvisories(APITestCase):
                 url,
                 data={"purls": ["pkg:pypi/sample@1.0.0"]},
                 format="json",
+                HTTP_USER_AGENT="VCIO_API_AGENT",
             )
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -256,6 +257,7 @@ class APIV3TestCaseOneAdvisoryMultiplePackages(APITestCase):
                     "purls": [],
                 },
                 format="json",
+                HTTP_USER_AGENT="VCIO_API_AGENT",
             )
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -318,6 +320,7 @@ class PackageCommitPatchTests(APITestCase):
             url,
             data={"purls": ["pkg:pypi/sample@1.0.0"], "details": True, "reachability": True},
             format="json",
+            HTTP_USER_AGENT="VCIO_API_AGENT",
         )
 
         assert response.status_code == 200
@@ -439,6 +442,7 @@ class PackageCommitPatchComplexTest(APITestCase):
             url,
             data={"purls": ["pkg:pypi/sample@1.0.0"], "details": True, "reachability": True},
             format="json",
+            HTTP_USER_AGENT="VCIO_API_AGENT",
         )
 
         assert response.status_code == 200
@@ -461,6 +465,7 @@ class PackageCommitPatchComplexTest(APITestCase):
                 url,
                 data={"purls": ["pkg:pypi/sample@1.0.0"], "details": True, "reachability": True},
                 format="json",
+                HTTP_USER_AGENT="VCIO_API_AGENT",
             )
 
         assert response.status_code == 200
@@ -511,7 +516,7 @@ class TestPackageTypesView(APITestCase):
 
         client = APIClient(enforce_csrf_checks=True)
 
-        response = client.get(reverse("package-types-list"))
+        response = client.get(reverse("package-types-list"), HTTP_USER_AGENT="VCIO_API_AGENT")
 
         assert response.status_code == 200
         assert response.json() == ["npm", "pypi"]

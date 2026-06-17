@@ -104,23 +104,31 @@ class TestDebianResponse(TransactionTestCase):
 
         # check filtering when qualifiers are not normalized
         test_purl = quote("pkg:deb/vlc@1.50-1.1?foo=bar&tar=ball")
-        response = self.client.get(f"/api/packages/?purl={test_purl}", format="json").data
+        response = self.client.get(
+            f"/api/packages/?purl={test_purl}", format="json", HTTP_USER_AGENT="VCIO_API_AGENT"
+        ).data
 
         self.assertEqual(2, response["count"])
 
         test_purl = quote("pkg:deb/vlc@1.50-1.1?tar=ball&foo=bar")
-        response = self.client.get(f"/api/packages/?purl={test_purl}", format="json").data
+        response = self.client.get(
+            f"/api/packages/?purl={test_purl}", format="json", HTTP_USER_AGENT="VCIO_API_AGENT"
+        ).data
 
         self.assertEqual(2, response["count"])
 
         # check filtering when there is intersection of qualifiers between packages
         test_purl = quote("pkg:deb/vlc@1.50-1.1?foo=bar")
-        response = self.client.get(f"/api/packages/?purl={test_purl}", format="json").data
+        response = self.client.get(
+            f"/api/packages/?purl={test_purl}", format="json", HTTP_USER_AGENT="VCIO_API_AGENT"
+        ).data
 
         self.assertEqual(2, response["count"])
 
     def test_query_by_name(self):
-        response = self.client.get("/api/packages/?name=mimetex", format="json").data
+        response = self.client.get(
+            "/api/packages/?name=mimetex", format="json", HTTP_USER_AGENT="VCIO_API_AGENT"
+        ).data
 
         self.assertEqual(1, response["count"])
 
@@ -135,7 +143,7 @@ class TestDebianResponse(TransactionTestCase):
 
     def test_query_by_invalid_package_url(self):
         url = "/api/packages/?purl=invalid_purl"
-        response = self.client.get(url, format="json")
+        response = self.client.get(url, format="json", HTTP_USER_AGENT="VCIO_API_AGENT")
 
         self.assertEqual(400, response.status_code)
         self.assertIn("error", response.data)
@@ -144,7 +152,7 @@ class TestDebianResponse(TransactionTestCase):
 
     def test_query_by_package_url_without_namespace(self):
         url = "/api/packages/?purl=pkg:deb/mimetex@1.50-1.1"
-        response = self.client.get(url, format="json").data
+        response = self.client.get(url, format="json", HTTP_USER_AGENT="VCIO_API_AGENT").data
 
         self.assertEqual(1, response["count"])
 
@@ -175,7 +183,9 @@ class TestSerializers(TransactionTestCase):
     def test_package_serializer(self):
         pk = Package.objects.filter(name="mimetex").with_is_vulnerable()
         mock_request = RequestFactory().get("/api")
-        response = PackageSerializer(pk, many=True, context={"request": mock_request}).data
+        response = PackageSerializer(
+            pk, many=True, context={"request": mock_request}, HTTP_USER_AGENT="VCIO_API_AGENT"
+        ).data
         self.assertEqual(1, len(response))
 
         first_result = response[0]
@@ -241,16 +251,20 @@ class APITestCaseVulnerability(TransactionTestCase):
         self.vulnerability.severities.add(severity)
 
     def test_api_status(self):
-        response = self.csrf_client.get("/api/vulnerabilities/")
+        response = self.csrf_client.get("/api/vulnerabilities/", HTTP_USER_AGENT="VCIO_API_AGENT")
         self.assertEqual(status.HTTP_200_OK, response.status_code)
 
     def test_api_response(self):
-        response = self.csrf_client.get("/api/vulnerabilities/").data
+        response = self.csrf_client.get(
+            "/api/vulnerabilities/", HTTP_USER_AGENT="VCIO_API_AGENT"
+        ).data
         self.assertEqual(response["count"], 201)
 
     def test_api_with_single_vulnerability(self):
         response = self.csrf_client.get(
-            f"/api/vulnerabilities/{self.vulnerability.id}", format="json"
+            f"/api/vulnerabilities/{self.vulnerability.id}",
+            format="json",
+            HTTP_USER_AGENT="VCIO_API_AGENT",
         ).data
 
         assert response == {
@@ -307,7 +321,9 @@ class APITestCaseVulnerability(TransactionTestCase):
 
     def test_api_with_single_vulnerability_with_filters(self):
         response = self.csrf_client.get(
-            f"/api/vulnerabilities/{self.vulnerability.id}?type=pypi", format="json"
+            f"/api/vulnerabilities/{self.vulnerability.id}?type=pypi",
+            format="json",
+            HTTP_USER_AGENT="VCIO_API_AGENT",
         ).data
         assert response == {
             "url": f"http://testserver/api/vulnerabilities/{self.vulnerability.id}",
@@ -361,7 +377,9 @@ class APITestCaseVulnerability(TransactionTestCase):
         self.pkg1.save()
 
         response = self.csrf_client.get(
-            f"/api/vulnerabilities/{self.vulnerability.id}", format="json"
+            f"/api/vulnerabilities/{self.vulnerability.id}",
+            format="json",
+            HTTP_USER_AGENT="VCIO_API_AGENT",
         ).data
 
         expected = {
@@ -508,7 +526,9 @@ class APIPerformanceTest(TestCase):
             # 2. Authenticating user
             # 3. Get all vulnerable packages
             # 4. RELEASE SAVEPOINT
-            response = self.csrf_client.get(f"/api/packages/all", format="json").data
+            response = self.csrf_client.get(
+                f"/api/packages/all", format="json", HTTP_USER_AGENT="VCIO_API_AGENT"
+            ).data
 
             assert len(response) == 3
             assert list(response) == [
@@ -519,17 +539,26 @@ class APIPerformanceTest(TestCase):
 
     def test_api_packages_single_num_queries(self):
         with self.assertNumQueries(7):
-            self.csrf_client.get(f"/api/packages/{self.pkg_2_14_0_rc1.id}", format="json")
+            self.csrf_client.get(
+                f"/api/packages/{self.pkg_2_14_0_rc1.id}",
+                format="json",
+                HTTP_USER_AGENT="VCIO_API_AGENT",
+            )
 
     def test_api_packages_single_with_purl_in_query_num_queries(self):
         with self.assertNumQueries(8):
-            self.csrf_client.get(f"/api/packages/?purl={self.pkg_2_14_0_rc1.purl}", format="json")
+            self.csrf_client.get(
+                f"/api/packages/?purl={self.pkg_2_14_0_rc1.purl}",
+                format="json",
+                HTTP_USER_AGENT="VCIO_API_AGENT",
+            )
 
     def test_api_packages_single_with_purl_no_version_in_query_num_queries(self):
         with self.assertNumQueries(63):
             self.csrf_client.get(
                 f"/api/packages/?purl=pkg:maven/com.fasterxml.jackson.core/jackson-databind",
                 format="json",
+                HTTP_USER_AGENT="VCIO_API_AGENT",
             )
 
     def test_api_packages_bulk_search(self):
@@ -543,6 +572,7 @@ class APIPerformanceTest(TestCase):
                 f"/api/packages/bulk_search",
                 data=json.dumps(data),
                 content_type="application/json",
+                HTTP_USER_AGENT="VCIO_API_AGENT",
             ).json()
 
     def test_api_packages_with_lookup(self):
@@ -553,6 +583,7 @@ class APIPerformanceTest(TestCase):
                 f"/api/packages/lookup",
                 data=json.dumps(data),
                 content_type="application/json",
+                HTTP_USER_AGENT="VCIO_API_AGENT",
             ).json()
 
     def test_api_packages_bulk_lookup(self):
@@ -566,6 +597,7 @@ class APIPerformanceTest(TestCase):
                 f"/api/packages/bulk_lookup",
                 data=json.dumps(data),
                 content_type="application/json",
+                HTTP_USER_AGENT="VCIO_API_AGENT",
             ).json()
 
 
@@ -636,7 +668,9 @@ class APITestCasePackage(TestCase):
         set_as_fixing(package=self.pkg_2_13_2, vulnerability=self.vul1)
 
     def test_api_with_lesser_and_greater_fixed_by_packages(self):
-        response = self.csrf_client.get(f"/api/packages/{self.pkg_2_13_1.id}", format="json").data
+        response = self.csrf_client.get(
+            f"/api/packages/{self.pkg_2_13_1.id}", format="json", HTTP_USER_AGENT="VCIO_API_AGENT"
+        ).data
 
         expected = {
             "url": "http://testserver/api/packages/{0}".format(self.pkg_2_13_1.id),
@@ -745,21 +779,29 @@ class APITestCasePackage(TestCase):
         assert all(hasattr(p, "is_vulnerable") for p in pkgs)
 
     def test_api_status(self):
-        response = self.csrf_client.get("/api/packages/", format="json")
+        response = self.csrf_client.get(
+            "/api/packages/", format="json", HTTP_USER_AGENT="VCIO_API_AGENT"
+        )
         self.assertEqual(status.HTTP_200_OK, response.status_code)
 
     def test_api_response(self):
-        response = self.csrf_client.get("/api/packages/", format="json").data
+        response = self.csrf_client.get(
+            "/api/packages/", format="json", HTTP_USER_AGENT="VCIO_API_AGENT"
+        ).data
         self.assertEqual(response["count"], 5)
 
     def test_api_with_namespace_filter(self):
         response = self.csrf_client.get(
-            "/api/packages/?namespace=com.fasterxml.jackson.core", format="json"
+            "/api/packages/?namespace=com.fasterxml.jackson.core",
+            format="json",
+            HTTP_USER_AGENT="VCIO_API_AGENT",
         ).data
         self.assertEqual(response["count"], 5)
 
     def test_api_with_wrong_namespace_filter(self):
-        response = self.csrf_client.get("/api/packages/?namespace=foo-bar", format="json").data
+        response = self.csrf_client.get(
+            "/api/packages/?namespace=foo-bar", format="json", HTTP_USER_AGENT="VCIO_API_AGENT"
+        ).data
         self.assertEqual(response["count"], 0)
 
     def test_api_with_all_vulnerable_packages(self):
@@ -769,7 +811,9 @@ class APITestCasePackage(TestCase):
             # 2. Authenticating user
             # 3. Get all vulnerable packages
             # 4. RELEASE SAVEPOINT
-            response = self.csrf_client.get(f"/api/packages/all", format="json").data
+            response = self.csrf_client.get(
+                f"/api/packages/all", format="json", HTTP_USER_AGENT="VCIO_API_AGENT"
+            ).data
 
             assert len(response) == 3
             assert list(response) == [
@@ -782,6 +826,7 @@ class APITestCasePackage(TestCase):
         response = self.csrf_client.get(
             f"/api/packages/?purl=pkg:maven/com.fasterxml.jackson.core/jackson-databind@2.14.0-rc1?foo=bar",
             format="json",
+            HTTP_USER_AGENT="VCIO_API_AGENT",
         ).data
         assert response["count"] == 1
         assert (
@@ -793,7 +838,9 @@ class APITestCasePackage(TestCase):
         self.pkg_2_13_1.is_ghost = True
         self.pkg_2_13_1.save()
 
-        response = self.csrf_client.get(f"/api/packages/{self.pkg_2_13_1.id}", format="json").data
+        response = self.csrf_client.get(
+            f"/api/packages/{self.pkg_2_13_1.id}", format="json", HTTP_USER_AGENT="VCIO_API_AGENT"
+        ).data
 
         expected = {
             "url": "http://testserver/api/packages/{0}".format(self.pkg_2_13_1.id),
@@ -856,7 +903,9 @@ class APITestCasePackage(TestCase):
         self.pkg_2_14_0_rc1.is_ghost = True
         self.pkg_2_14_0_rc1.save()
 
-        response = self.csrf_client.get(f"/api/packages/{self.pkg_2_13_1.id}", format="json").data
+        response = self.csrf_client.get(
+            f"/api/packages/{self.pkg_2_13_1.id}", format="json", HTTP_USER_AGENT="VCIO_API_AGENT"
+        ).data
 
         expected = {
             "url": "http://testserver/api/packages/{0}".format(self.pkg_2_13_1.id),
@@ -977,11 +1026,15 @@ class CPEApi(TestCase):
             )
 
     def test_api_status(self):
-        response = self.csrf_client.get("/api/cpes/", format="json")
+        response = self.csrf_client.get(
+            "/api/cpes/", format="json", HTTP_USER_AGENT="VCIO_API_AGENT"
+        )
         self.assertEqual(status.HTTP_200_OK, response.status_code)
 
     def test_api_response(self):
-        response = self.csrf_client.get("/api/cpes/?cpe=cpe:/a:nginx:9", format="json").data
+        response = self.csrf_client.get(
+            "/api/cpes/?cpe=cpe:/a:nginx:9", format="json", HTTP_USER_AGENT="VCIO_API_AGENT"
+        ).data
         self.assertEqual(response["count"], 1)
 
 
@@ -1018,7 +1071,9 @@ class TestCPEApiWithPackageVulnerabilityRelation(TestCase):
             )
 
     def test_cpe_api(self):
-        response = self.csrf_client.get("/api/cpes/", format="json")
+        response = self.csrf_client.get(
+            "/api/cpes/", format="json", HTTP_USER_AGENT="VCIO_API_AGENT"
+        )
         self.assertEqual(status.HTTP_200_OK, response.status_code)
 
         response_data = response.json()
@@ -1036,11 +1091,15 @@ class AliasApi(TestCase):
             Alias.objects.create(alias=f"CVE-{i}", vulnerability=self.vulnerability)
 
     def test_api_status(self):
-        response = self.csrf_client.get("/api/aliases/", format="json")
+        response = self.csrf_client.get(
+            "/api/aliases/", format="json", HTTP_USER_AGENT="VCIO_API_AGENT"
+        )
         self.assertEqual(status.HTTP_200_OK, response.status_code)
 
     def test_api_response(self):
-        response = self.csrf_client.get("/api/aliases?alias=CVE-9", format="json").data
+        response = self.csrf_client.get(
+            "/api/aliases?alias=CVE-9", format="json", HTTP_USER_AGENT="VCIO_API_AGENT"
+        ).data
         self.assertEqual(response["count"], 1)
 
 
@@ -1086,6 +1145,7 @@ class BulkSearchAPIPackage(TestCase):
             "/api/packages/bulk_search",
             data=json.dumps(request_body),
             content_type="application/json",
+            HTTP_USER_AGENT="VCIO_API_AGENT",
         ).json()
         assert len(response) == 13
 
@@ -1095,6 +1155,7 @@ class BulkSearchAPIPackage(TestCase):
             "/api/packages/bulk_search",
             data=json.dumps(request_body),
             content_type="application/json",
+            HTTP_USER_AGENT="VCIO_API_AGENT",
         ).json()
         assert len(response) == 1
         assert response[0]["purl"] == "pkg:nginx/nginx@1.0.15"
@@ -1105,6 +1166,7 @@ class BulkSearchAPIPackage(TestCase):
             "/api/packages/bulk_search",
             data=json.dumps(request_body),
             content_type="application/json",
+            HTTP_USER_AGENT="VCIO_API_AGENT",
         ).json()
         assert len(response) == 1
         assert response[0]["purl"] == "pkg:nginx/nginx@1.0.15"
@@ -1119,6 +1181,7 @@ class BulkSearchAPIPackage(TestCase):
             "/api/packages/bulk_search",
             data=json.dumps(request_body),
             content_type="application/json",
+            HTTP_USER_AGENT="VCIO_API_AGENT",
         ).json()
         assert len(response) == 1
         assert response[0] == "pkg:nginx/nginx@1.0.15"
@@ -1131,6 +1194,7 @@ class BulkSearchAPIPackage(TestCase):
             "/api/packages/bulk_search",
             data=json.dumps(request_body),
             content_type="application/json",
+            HTTP_USER_AGENT="VCIO_API_AGENT",
         ).json()
 
         expected = {
@@ -1148,6 +1212,7 @@ class BulkSearchAPIPackage(TestCase):
             "/api/packages/bulk_search",
             data=json.dumps(request_body),
             content_type="application/json",
+            HTTP_USER_AGENT="VCIO_API_AGENT",
         ).json()
 
         expected = {
@@ -1163,6 +1228,7 @@ class BulkSearchAPIPackage(TestCase):
             "/api/packages/bulk_search",
             data=json.dumps(request_body),
             content_type="application/json",
+            HTTP_USER_AGENT="VCIO_API_AGENT",
         ).json()
 
         expected = {
@@ -1220,6 +1286,7 @@ class BulkSearchAPICPE(TestCase):
             "/api/cpes/bulk_search",
             data=json.dumps(request_body),
             content_type="application/json",
+            HTTP_USER_AGENT="VCIO_API_AGENT",
         ).json()
         assert len(response) == 1
         assert response[0]["summary"] == "test"
@@ -1235,6 +1302,7 @@ class BulkSearchAPICPE(TestCase):
             "/api/cpes/bulk_search",
             data=json.dumps(request_body),
             content_type="application/json",
+            HTTP_USER_AGENT="VCIO_API_AGENT",
         ).json()
         assert len(response) == 0
 
@@ -1246,6 +1314,7 @@ class BulkSearchAPICPE(TestCase):
             "/api/cpes/bulk_search",
             data=json.dumps(request_body),
             content_type="application/json",
+            HTTP_USER_AGENT="VCIO_API_AGENT",
         ).json()
         assert len(response) == 2
 
@@ -1257,6 +1326,7 @@ class BulkSearchAPICPE(TestCase):
             "/api/cpes/bulk_search",
             data=json.dumps(request_body),
             content_type="application/json",
+            HTTP_USER_AGENT="VCIO_API_AGENT",
         ).json()
         assert response == {"Error": "A non-empty 'cpes' list of CPEs is required."}
 
@@ -1266,6 +1336,7 @@ class BulkSearchAPICPE(TestCase):
             "/api/cpes/bulk_search",
             data=json.dumps(request_body),
             content_type="application/json",
+            HTTP_USER_AGENT="VCIO_API_AGENT",
         ).json()
         assert response == {"Error": "Invalid CPE: CVE-2022-2022"}
 
@@ -1292,6 +1363,7 @@ class TestLookup(TestCase):
             "/api/packages/lookup",
             data=json.dumps(request_body),
             content_type="application/json",
+            HTTP_USER_AGENT="VCIO_API_AGENT",
         ).json()
 
         expected = {
@@ -1307,6 +1379,7 @@ class TestLookup(TestCase):
             "/api/packages/lookup",
             data=json.dumps(request_body),
             content_type="application/json",
+            HTTP_USER_AGENT="VCIO_API_AGENT",
         ).json()
         assert len(response) == 1
         assert response[0]["purl"] == "pkg:pypi/microweber/microweber@1.2"
@@ -1323,6 +1396,7 @@ class TestLookup(TestCase):
             "/api/packages/bulk_lookup",
             data=json.dumps(request_body),
             content_type="application/json",
+            HTTP_USER_AGENT="VCIO_API_AGENT",
         ).json()
         assert len(response) == 1
 
@@ -1332,6 +1406,7 @@ class TestLookup(TestCase):
             "/api/packages/bulk_lookup",
             data=json.dumps(request_body),
             content_type="application/json",
+            HTTP_USER_AGENT="VCIO_API_AGENT",
         ).json()
 
         expected = {
