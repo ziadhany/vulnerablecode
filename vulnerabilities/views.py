@@ -1167,4 +1167,6 @@ class AltchaView(FormView):
 
     def form_valid(self, form):
         self.request.session["altcha_verified_at"] = time.time()
-        return redirect("/")
+
+        next_url = self.request.GET.get("next", "/")
+        return redirect(next_url)

@@ -8,9 +8,12 @@
 #
 
 import time
+from urllib.parse import urlencode
 
 from django.shortcuts import redirect
 from django.utils.deprecation import MiddlewareMixin
+
+SESSION_TIMEOUT = 900  # 15 minutes
 
 
 class AltchaProtectionMiddleware(MiddlewareMixin):
@@ -20,9 +23,8 @@ class AltchaProtectionMiddleware(MiddlewareMixin):
         "/advisories/",
         "/affected-by-advisories/v2/",
         "/fixing-advisories/v2/",
+        "/pipelines/",
     )
-
-    SESSION_TIMEOUT = 900  # 15 minutes
 
     def __call__(self, request):
         protected = any(request.path.startswith(prefix) for prefix in self.PROTECTED_PREFIXES)
@@ -31,12 +33,13 @@ class AltchaProtectionMiddleware(MiddlewareMixin):
             return self.get_response(request)
 
         verified_at = request.session.get("altcha_verified_at")
+        next_url = request.get_full_path()
 
         if not verified_at:
-            return redirect(f"/altcha/")
+            return redirect(f"/altcha/?{urlencode({'next': next_url})}")
 
-        if time.time() - verified_at > self.SESSION_TIMEOUT:
+        if time.time() - verified_at > SESSION_TIMEOUT:
             request.session.pop("altcha_verified_at", None)
-            return redirect(f"/altcha/")
+            return redirect(f"/altcha/?{urlencode({'next': next_url})}")
 
         return self.get_response(request)
