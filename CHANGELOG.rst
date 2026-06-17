@@ -28,6 +28,7 @@ Version v39.0.0
 - Add ALTCHA verification in UI 
 - Add API/ UI support for Patch/PackageCommitPatch
 - Fix failing V2 pipelinea
+- Improve altcha challenge flow and reduce session timeout (https://github.com/aboutcode-org/vulnerablecode/pull/2348)
 
 
 Version v38.6.0

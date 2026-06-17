@@ -26,7 +26,7 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name="pipelineschedule",
             name="run_interval",
-            field=models.PositiveSmallIntegerField(
+            field=models.IntegerField(
                 default=1440,
                 help_text="Number of minutes to wait between run of this pipeline.",
                 validators=[
