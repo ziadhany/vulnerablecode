@@ -112,6 +112,7 @@ MIDDLEWARE = (
     "vulnerabilities.middleware.ban_user_agent.BanUserAgent",
     "vulnerabilities.middleware.timezone.UserTimezoneMiddleware",
     "vulnerabilities.middleware.altcha_protection.AltchaProtectionMiddleware",
+    "vulnerabilities.middleware.vcio_user_agent.VCIOUserAgentMiddleware",
 )
 
 ROOT_URLCONF = "vulnerablecode.urls"
@@ -195,11 +196,13 @@ VULNERABLECODEIO_REQUIRE_AUTHENTICATION = env.bool(
 LOGIN_REDIRECT_URL = "/"
 LOGOUT_REDIRECT_URL = "/"
 
-THROTTLE_RATE_ANON = env.str("THROTTLE_RATE_ANON", default="3600/hour")
+THROTTLE_RATE_ANON = env.str("THROTTLE_RATE_ANON", default="10/minute")
 THROTTLE_RATE_UI = env.str("THROTTLE_RATE_UI", default="15/minute")
-THROTTLE_RATE_USER_HIGH = env.str("THROTTLE_RATE_USER_HIGH", default="18000/hour")
-THROTTLE_RATE_USER_MEDIUM = env.str("THROTTLE_RATE_USER_MEDIUM", default="14400/hour")
-THROTTLE_RATE_USER_LOW = env.str("THROTTLE_RATE_USER_LOW", default="10800/hour")
+THROTTLE_RATE_USER_HIGH = env.str("THROTTLE_RATE_USER_HIGH", default="1/second")
+THROTTLE_RATE_USER_MEDIUM = env.str("THROTTLE_RATE_USER_MEDIUM", default="30/minute")
+THROTTLE_RATE_USER_LOW = env.str("THROTTLE_RATE_USER_LOW", default="20/minute")
+
+VCIO_USER_AGENT = env.str("VCIO_USER_AGENT", default="VCIO_API_AGENT")
 
 REST_FRAMEWORK_DEFAULT_THROTTLE_RATES = {
     "anon": THROTTLE_RATE_ANON,
@@ -263,8 +266,12 @@ REST_FRAMEWORK = {
     "DATETIME_FORMAT": "%Y-%m-%dT%H:%M:%SZ",
 }
 
-api_doc_intro = """
+api_doc_intro = f"""
 <div>
+    <strong>Note:</strong> All API requests must include the following
+    <code>User-Agent</code> header:
+    <pre>User-Agent: {VCIO_USER_AGENT} </pre>
+    Requests without this exact header value will be rejected.
     <p><strong>VulnerableCode</strong> is open data and free software by
     <a href="https://github.com/nexB/vulnerablecode"> nexB Inc. and others.</a>
     </p>
