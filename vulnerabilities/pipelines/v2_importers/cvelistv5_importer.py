@@ -23,6 +23,7 @@ logger = logging.getLogger(__name__)
 
 class CVEListV5ImporterPipeline(VulnerableCodeBaseImporterPipelineV2):
     pipeline_id = "cvelistv5_importer_v2"
+    datasource_id = "cvelistv5"
     # license PR: https://github.com/CVEProject/cvelistV5/pull/65
     spdx_license_expression = "CC0-1.0"
     license_url = "https://github.com/CVEProject/cvelistV5/blob/main/LICENSE"
