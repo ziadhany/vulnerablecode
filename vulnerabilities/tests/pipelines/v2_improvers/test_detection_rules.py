@@ -32,8 +32,9 @@ def test_detection_rules_improver(mock_fetch_via_vcs):
 
     adv1 = AdvisoryV2.objects.create(
         advisory_id="VCIO-123-2002",
-        datasource_id="ds",
-        avid="ds/VCIO-123-2002",
+        pipeline_id="detection_rules",
+        datasource_id="rules",
+        avid="rules/VCIO-123-2002",
         unique_content_id="i3giu",
         url="https://test.com",
         date_collected=datetime.now(),

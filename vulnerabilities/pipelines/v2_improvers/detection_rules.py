@@ -3,11 +3,10 @@ from pathlib import Path
 
 from fetchcode.vcs import fetch_via_vcs
 
-from vulnerabilities.models import AdvisoryAlias
-from vulnerabilities.models import AdvisoryV2
 from vulnerabilities.models import DetectionRule
 from vulnerabilities.models import DetectionRuleTypes
 from vulnerabilities.pipelines import VulnerableCodePipeline
+from vulnerabilities.utils import build_alias_to_advisory_map
 
 
 class DetectionRulesPipeline(VulnerableCodePipeline):
@@ -56,7 +55,7 @@ class DetectionRulesPipeline(VulnerableCodePipeline):
                 source_url = json_data.get("source_url")
                 for rule in json_data.get("rules", []):
                     vulns_id = rule.get("vulnerabilities", [])
-                    advisories = get_related_advisories(vulns_id)
+                    advisories = build_alias_to_advisory_map(vulns_id)
 
                     raw_text = rule.get("rule_text")
                     rule_metadata = rule.get("rule_metadata")
@@ -80,26 +79,3 @@ class DetectionRulesPipeline(VulnerableCodePipeline):
     def on_failure(self):
         """Ensure cleanup is always performed on failure."""
         self.clean_downloads()
-
-
-def get_related_advisories(vulnerability_ids, logger=print):
-    """
-    Fetches related advisories for a list of vulnerability IDs.
-    """
-    advisories = set()
-
-    for vulnerability_id in vulnerability_ids:
-        try:
-            alias = AdvisoryAlias.objects.get(alias=vulnerability_id)
-            advs = alias.advisories.all()
-            advisories.update(advs)
-
-        except AdvisoryAlias.DoesNotExist:
-            advs = AdvisoryV2.objects.filter(advisory_id=vulnerability_id).latest_per_avid()
-
-            if advs:
-                advisories.update(advs)
-            else:
-                logger(f"No advisory found for ID/alias: {vulnerability_id}")
-
-    return advisories
