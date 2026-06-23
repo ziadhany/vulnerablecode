@@ -55,7 +55,10 @@ class DetectionRulesPipeline(VulnerableCodePipeline):
                 source_url = json_data.get("source_url")
                 for rule in json_data.get("rules", []):
                     vulns_id = rule.get("vulnerabilities", [])
-                    advisories = build_alias_to_advisory_map(vulns_id)
+                    advisories_map = build_alias_to_advisory_map(vulns_id)
+                    advisory_instances = {
+                        advisory for adv_list in advisories_map.values() for advisory in adv_list
+                    }
 
                     raw_text = rule.get("rule_text")
                     rule_metadata = rule.get("rule_metadata")
@@ -67,8 +70,9 @@ class DetectionRulesPipeline(VulnerableCodePipeline):
                             "rule_metadata": rule_metadata,
                         },
                     )
-                    if advisories:
-                        detection_rule.related_advisories.add(*advisories)
+
+                    if advisory_instances:
+                        detection_rule.related_advisories.add(*advisory_instances)
 
     def clean_downloads(self):
         """Cleanup any temporary repository data."""
