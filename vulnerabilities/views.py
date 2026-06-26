@@ -769,7 +769,7 @@ class HomePage(VulnerableCodeView):
 
 
 class HomePageV2(VulnerableCodeView):
-    template_name = "index_v2.html"
+    template_name = "index.html"
 
     def get(self, request):
         request_query = request.GET
