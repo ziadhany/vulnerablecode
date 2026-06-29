@@ -26,6 +26,7 @@ from vulnerabilities.views import AdvisoryDetails
 from vulnerabilities.views import AdvisoryPackageCommitPatchDetails
 from vulnerabilities.views import AdvisoryPackageCurationView
 from vulnerabilities.views import AdvisoryPackagesDetails
+from vulnerabilities.views import AdvisorySeverityCurationView
 from vulnerabilities.views import AdvisoryToDoListView
 from vulnerabilities.views import AffectedByAdvisoriesListView
 from vulnerabilities.views import AltchaView
@@ -84,6 +85,11 @@ urlpatterns = [
         "advisories/todos/<uuid:todo_id>/package/curate/",
         AdvisoryPackageCurationView.as_view(),
         name="todo-detail",
+    ),
+    path(
+        "advisories/todos/<uuid:todo_id>/severity/curate/",
+        AdvisorySeverityCurationView.as_view(),
+        name="todo-severity-detail",
     ),
     path(
         "pipelines/<str:pipeline_id>/runs/",
