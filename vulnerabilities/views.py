@@ -1120,7 +1120,7 @@ class AdvisoryToDoListView(ListView, FormMixin):
 
         qs.prefetch_related("advisories__aliases")
         if form.is_valid() and (search := form.cleaned_data.get("search")):
-            return qs.filter(advisories__aliases__alias__icontains=search)
+            return qs.filter(advisories__aliases__alias__icontains=search).distinct()
 
         return qs
 
