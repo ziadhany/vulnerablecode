@@ -1,3 +1,4 @@
+aboutcode.federated==1.0.3
 aboutcode.pipeline==0.1.0
 altcha==1.0.0
 asgiref==3.8.1
