@@ -46,6 +46,7 @@ class MozillaImporterPipeline(VulnerableCodeBaseImporterPipelineV2):
     spdx_license_expression = "MPL-2.0"
     license_url = "https://github.com/mozilla/foundation-security-advisories/blob/master/LICENSE"
 
+    exclude_from_package_todo = True
     precedence = 200
 
     @classmethod
