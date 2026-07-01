@@ -17,7 +17,6 @@ SESSION_TIMEOUT = 900  # 15 minutes
 
 ALTCHA_PROTECTED_PREFIXES = (
     "/packages/",
-    "/vulnerabilities/",
     "/advisories/",
     "/affected-by-advisories/v2/",
     "/fixing-advisories/v2/",
