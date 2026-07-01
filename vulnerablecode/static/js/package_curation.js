@@ -23,24 +23,46 @@ const app = {
         document.getElementById('progress').value = progPercentage;
         document.getElementById('progress-text').innerText = `${this.currentIndex + 1} / ${total}`;
         document.getElementById('current-purl').innerText = item.purl;
-        document.getElementById('conflict-reason').innerText = item.conflict_reason;
+
         if (!this.userStates[this.currentIndex]) {
             this.userStates[this.currentIndex] = {};
             versions.forEach(v => {
                 if (item.partial_curation.affected.includes(v)) this.userStates[this.currentIndex][v] = 'affected';
                 else if (item.partial_curation.fixing.includes(v)) this.userStates[this.currentIndex][v] = 'fixed';
-                else this.userStates[this.currentIndex][v] = '?';
+                else this.userStates[this.currentIndex][v] = 'empty';
             });
         }
+        this.renderConflictSummary(item);
         this.renderHeader(item);
         this.renderBody(item, versions);
         this.updateNavButtons();
     },
 
+    renderConflictSummary(item){
+        const el = document.getElementById("conflict-reason");
+        const btn = document.getElementById("toggle-conflict");
+
+        el.innerText = item.conflict_reason;
+        el.classList.add("truncate-conflict-summary");
+        const hasOverflow = el.scrollHeight > el.clientHeight;
+
+        if (hasOverflow) {
+            btn.style.display = "inline";
+
+            btn.onclick = () => {
+                const isTruncated = el.classList.toggle("truncate-conflict-summary");
+                btn.innerText = isTruncated ? "Show more" : "Show less";
+            };
+        } else {
+            btn.style.display = "none";
+            el.classList.remove("truncate-conflict-summary");
+        }
+    },
+
     renderHeader(item) {
         const header = document.getElementById('table-header');
         header.innerHTML = `
-            <th class="has-text-weight-bold pt-4">Version</th>
+            <th class="has-text-weight-bold has-text-centered pt-4 is-size-6">Package Versions</th>
             <th style="width: 140px;" class="has-text-centered">
                 <div>
                     <div>
@@ -101,7 +123,9 @@ const app = {
                     secTh.innerHTML = `
                         <div>
                             <div class="mb-3 advisory-wrapper">
-                                <span class="tag is-light is-size-7 mb-1">Similar</span>
+                                <div>
+                                    <span class="tag is-light is-size-7 mb-1">Similar</span>
+                                </div>
                                 <a href="${secUrl}" target="_blank" rel="noopener noreferrer" class="has-text-grey-dark has-text-weight-bold advisory-link">
                                     <span>${sec.advisory_uid}</span>
                                     <span class="icon is-small" ><i class="fa fa-external-link"></i></span>
@@ -205,7 +229,7 @@ const app = {
             } else if (item.partial_curation.fixing.includes(v)) {
                 this.userStates[this.currentIndex][v] = 'fixed';
             } else {
-                this.userStates[this.currentIndex][v] = '?';
+                this.userStates[this.currentIndex][v] = 'empty';
             }
         });
         this.renderBody(item, versions);
@@ -216,8 +240,8 @@ const app = {
         const state = this.userStates[this.currentIndex][v];
         tr.innerHTML = `<td class="has-text-weight-bold">${v}</td>`;
         const userTd = document.createElement('td');
-        userTd.className = `curation-cell state-${state} `;
-        userTd.innerText = state.toUpperCase();
+        userTd.className = `curation-cell state-${state}`;
+        userTd.innerText = state === "empty"? "Select value": state.toUpperCase();
         userTd.onclick = () => this.cycleState(v);
         tr.appendChild(userTd);
         
@@ -227,7 +251,7 @@ const app = {
 
             const primaryState = advGroup.affected.includes(v) ? 'affected' : (advGroup.fixing.includes(v) ? 'fixed' : 'unaffected');
             const td = document.createElement('td');
-            td.className = `state-${primaryState} has-text-centered`;
+            td.className = `state-${primaryState} has-text-centered advisory-cell`;
             td.innerText = primaryState.toUpperCase();
             tr.appendChild(td);
 
@@ -238,7 +262,7 @@ const app = {
                     
                     const secState = secAffected.includes(v) ? 'affected' : (secFixing.includes(v) ? 'fixed' : 'unaffected'); 
                     const secTd = document.createElement('td');
-                    secTd.className = `state-${secState} has-text-centered`;
+                    secTd.className = `state-${secState} has-text-centered advisory-cell`;
                     secTd.style.borderLeft = "1px dashed #dbdbdb";
                     secTd.innerText = secState.toUpperCase();
                     tr.appendChild(secTd);
