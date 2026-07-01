@@ -243,7 +243,7 @@ const app = {
         const vectorDataRow = document.createElement('tr');
         let rowHtml = `
             <td></td>
-            <td class="vector-data-cell is-size-6 has-text-centered ">
+            <td class="vector-data-cell is-size-6 has-text-centered py-4">
                 ${this.generateCalculatedVectorString(item)}
             </td>
         `;
@@ -252,11 +252,11 @@ const app = {
             const colKey = `${this.currentIndex}-col-${groupIdx}`;
             const isExpanded = this.expandedFolds.has(colKey);
 
-            rowHtml += `<td class="vector-data-cell is-size-6 has-text-centered ">${advGroup.primary.vector_string || 'NA'}</td>`;
+            rowHtml += `<td class="vector-data-cell is-size-6 has-text-centered py-4 ">${advGroup.primary.vector_string || 'NA'}</td>`;
 
             if (isExpanded && advGroup.secondaries) {
                 advGroup.secondaries.forEach(sec => {
-                    rowHtml += `<td class="vector-data-cell is-size-6 has-text-centered" style="background-color: #fafafa;">${sec.vector_string || 'NA'}</td>`;
+                    rowHtml += `<td class="vector-data-cell is-size-6 has-text-centered py-4" style="background-color: #fafafa;">${sec.vector_string || 'NA'}</td>`;
                 });
             }
         });
@@ -380,27 +380,27 @@ const app = {
         this.renderBody(item); 
     },
 
-pickAdvisory(groupIdx, type, secIdx = null) {
-    const item = curationItems[this.currentIndex];
-    let targetAdvisory;
+    pickAdvisory(groupIdx, type, secIdx = null) {
+        const item = curationItems[this.currentIndex];
+        let targetAdvisory;
 
-    if (type === 'primary') {
-        targetAdvisory = item.advisories[groupIdx].primary.vector;
-    } else if (type === 'secondary') {
-        targetAdvisory = item.advisories[groupIdx].secondaries[secIdx].vector;
-    }
+        if (type === 'primary') {
+            targetAdvisory = item.advisories[groupIdx].primary.vector;
+        } else if (type === 'secondary') {
+            targetAdvisory = item.advisories[groupIdx].secondaries[secIdx].vector;
+        }
 
-    for (const [cat, metrics] of Object.entries(cvss_mapping[item.cvss])) {
-        for (const metricKey of Object.keys(metrics)) {
-            if (targetAdvisory[metricKey] !== undefined && targetAdvisory[metricKey] !== '') {
-                this.userStates[this.currentIndex][metricKey] = String(targetAdvisory[metricKey]);
-            } else {
-                this.userStates[this.currentIndex][metricKey] = ''; 
+        for (const [cat, metrics] of Object.entries(cvss_mapping[item.cvss])) {
+            for (const metricKey of Object.keys(metrics)) {
+                if (targetAdvisory[metricKey] !== undefined && targetAdvisory[metricKey] !== '') {
+                    this.userStates[this.currentIndex][metricKey] = String(targetAdvisory[metricKey]);
+                } else {
+                    this.userStates[this.currentIndex][metricKey] = '';
+                }
             }
         }
-    }
-    this.renderBody(item);
-},
+        this.renderBody(item);
+    },
 
     resetCurrentCuration() {
         const item = curationItems[this.currentIndex];
