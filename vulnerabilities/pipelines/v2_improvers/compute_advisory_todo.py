@@ -848,17 +848,15 @@ def get_disagreement_message(fixed_disagreement, affected_disagreement):
 
     if affected_disagreement:
         affected = ", ".join(affected_disagreement)
-        noun = "version" if len(affected_disagreement) == 1 else "versions"
-        verb = "is" if len(affected_disagreement) == 1 else "are"
-
-        messages.append(f"Advisories do not agree whether {noun} {affected} {verb} affected.")
+        messages.append(
+            f"Advisories disagree on whether the following version(s) are affected: {affected}."
+        )
 
     if fixed_disagreement:
         fixed = ", ".join(fixed_disagreement)
-        noun = "version" if len(fixed_disagreement) == 1 else "versions"
-        verb = "contains" if len(fixed_disagreement) == 1 else "contain"
-
-        messages.append(f"Advisories do not agree whether {noun} {fixed} {verb} the fix.")
+        messages.append(
+            f"Advisories disagree on whether the following version(s) contain the fix: {fixed}."
+        )
 
     return "\n".join(messages)
 
