@@ -291,7 +291,7 @@ class VulnerableCodeBaseImporterPipelineV2(VulnerableCodePipeline):
     # To rerun onetime pipeline reset is_active field to True via migration.
     run_once = False
     # Interval between runs in minutes.
-    run_interval = 1440
+    run_interval = 720
     run_priority = PipelineSchedule.ExecutionPriority.DEFAULT
 
     @classmethod
