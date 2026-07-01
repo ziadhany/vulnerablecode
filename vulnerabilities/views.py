@@ -1120,7 +1120,7 @@ class AdvisoryToDoListView(ListView, FormMixin):
 
         qs.prefetch_related("advisories__aliases")
         if form.is_valid() and (search := form.cleaned_data.get("search")):
-            return qs.filter(advisories__aliases__alias__icontains=search)
+            return qs.filter(advisories__aliases__alias__icontains=search).distinct()
 
         return qs
 
@@ -1177,3 +1177,24 @@ class AltchaView(FormView):
 
         next_url = self.request.GET.get("next", "/")
         return safe_altcha_redirect(next_url)
+
+
+class AdvisorySeverityCurationView(DetailView):
+    model = AdvisoryToDoV2
+    template_name = "severity_curation.html"
+    slug_url_kwarg = "todo_id"
+    slug_field = "todo_id"
+
+    def get_queryset(self):
+        return super().get_queryset().filter(issue_type="CONFLICTING_SEVERITY_SCORES")
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        todo = self.object
+
+        context["advisory_summaries"] = {
+            adv.avid: adv.summary for adv in todo.advisories.all() if adv.summary.strip()
+        }
+        context["vulnerability_id"] = todo.alias
+        context["curation_items"] = json.dumps(todo.issue_detail["curation_items"])
+        return context
