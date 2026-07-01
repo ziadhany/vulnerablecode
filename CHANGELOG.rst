@@ -1,6 +1,13 @@
 Release notes
 =============
 
+Version v40.0.0
+---------------------
+
+- Fix malformed CVSS severity scores.
+- Disable v1 API, UI & pipelines.
+
+
 Version v39.0.0
 ---------------------
 
