@@ -238,7 +238,7 @@ const app = {
     createRow(v, item) {
         const tr = document.createElement('tr');
         const state = this.userStates[this.currentIndex][v];
-        tr.innerHTML = `<td class="has-text-weight-bold">${v}</td>`;
+        tr.innerHTML = `<td class="has-text-weight-bold" style="word-break: break-all;">${v}</td>`;
         const userTd = document.createElement('td');
         userTd.className = `curation-cell state-${state}`;
         userTd.innerText = state === "empty"? "Select value": state.toUpperCase();
