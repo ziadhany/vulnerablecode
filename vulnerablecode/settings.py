@@ -275,19 +275,25 @@ api_doc_intro = f"""
     <p><strong>VulnerableCode</strong> is open data and free software by
     <a href="https://github.com/nexB/vulnerablecode"> nexB Inc. and others.</a>
     </p>
+    <p>API is throttled for anon users it is 10/minute and 30/minute for user with API key </p>
+    <p>Please refer to https://urllib3.readthedocs.io/en/stable/reference/urllib3.util.html and set <code> respect_retry_after_header </code> as True to respect the Retry-After header.</p>
+    <p>Example: https://github.com/aboutcode-org/dejacode/pull/550/changes#diff-9065d35748dfe1659a740cce66f00cee2782e07016665739584799bd27489df3 </p>
     <p>The VulnerableCode API exposes these endpoints:</p>
     <ul>
         <li>
-            <strong>packages/</strong>: main endpoint to lookup for vulnerable packages.
+            <strong>/v3/packages/</strong>: main endpoint to lookup for vulnerable packages.
         </li>
         <li>
-            <strong>vulnerabilities/</strong>: secondary endpoint to lookup by vulnerabilities.
+            <strong>/v3/advisories/</strong>: endpoint to lookup for advisories for a given package.
         </li>
         <li>
-            <strong>alias/</strong>: secondary endpoint to lookup vulnerabilities by aliases (e.g., CVE)
+            <strong>/v3/affected-by-advisories/</strong>: endpoint to lookup for advisories that affect a given package.
         </li>
         <li>
-            <strong>cpes/</strong>: secondary endpoint to lookup vulnerabilities by CPE.
+            <strong>/v3/fixing-advisories/</strong>: endpoint to lookup for advisories that fix a given package.
+        </li>
+        <li>
+            <strong>/v3/package-types/</strong>: endpoint to get package types of all the packages in the database.
         </li>
     </ul>
 </div>
