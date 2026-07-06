@@ -276,8 +276,8 @@ api_doc_intro = f"""
     <a href="https://github.com/nexB/vulnerablecode"> nexB Inc. and others.</a>
     </p>
     <p>API is throttled for anon users it is 10/minute and 30/minute for user with API key </p>
-    <p>Please refer to https://urllib3.readthedocs.io/en/stable/reference/urllib3.util.html and set <code> respect_retry_after_header </code> as True to respect the Retry-After header.</p>
-    <p>Example: https://github.com/aboutcode-org/dejacode/pull/550/changes#diff-9065d35748dfe1659a740cce66f00cee2782e07016665739584799bd27489df3 </p>
+    <p>Please refer to <a href="https://urllib3.readthedocs.io/en/stable/reference/urllib3.util.html" target="_blank">urllib3 documentation</a> and set <code> respect_retry_after_header </code> as True to respect the Retry-After header.</p>
+    <p>Example: <a href="https://github.com/aboutcode-org/dejacode/pull/550/changes#diff-9065d35748dfe1659a740cce66f00cee2782e07016665739584799bd27489df3" target="_blank">Dejacode Implementation</a></p>
     <p>The VulnerableCode API exposes these endpoints:</p>
     <ul>
         <li>
