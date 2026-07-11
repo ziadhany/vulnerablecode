@@ -30,7 +30,6 @@
    command-line-interface
    importers_link
    PIPELINES-AVID
-   SOURCES
 
 .. toctree::
    :hidden:
@@ -100,7 +99,6 @@ Reference documentation for VulnerableCode features and customizations.
 - :ref:`command_line_interface`
 - :ref:`importers_link`
 - :ref:`pipelines_avid`
-- :ref:`sources`
 
 .. rst-class:: column column2 bottom-right
 

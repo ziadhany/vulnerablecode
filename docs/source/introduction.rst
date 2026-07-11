@@ -22,15 +22,11 @@ you use are affected by known vulnerabilities and to determine whether a later p
 fixes those vulnerabilities.**
 
 
-- With the web UI, you can search by package using Package URLs or search by
-  vulnerability, e.g., by CVE. From there you can navigate to the package
-  vulnerabilities and to the vulnerable packages.
+- With the web UI, you can search by package using Package URLs or navigate directly to advisory/AVID page
 
 - With the JSON API, you can perform package queries using Package URLs (`purl
   <https://github.com/package-url/purl-spec>`__) or query
-  by vulnerability id ("VCID"). You can also query by CPEs and other vulnerability aliases.
-  The API provides paginated index and detail endpoints and includes indexes
-  of vulnerable CPEs and vulnerable Package URLs.
+  by advisory/AVID
 
 You can install VulnerableCode locally or use the provided publicly hosted instance,
 or host your own installation. You can contact the VulnerableCode team

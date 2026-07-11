@@ -100,45 +100,6 @@ Sample python script::
 The response will be a list of packages, these are packages
 that are affected by and/or that fix a vulnerability.
 
-.. _CPE Bulk Search:
-
-CPE Bulk Search
----------------------
-
-
-The CPE bulk search endpoint allows you to search for packages in bulk.
-You can pass a list of packages in the request body and the endpoint will
-return a list of vulnerabilities.
-
-
-You can pass a list of ``cpes`` in the request body. Each cpe should be a
-non empty string and a valid CPE.
-
-
-The request body should be a JSON object with the following structure::
-
-    {
-        "cpes": [
-            "cpe:2.3:a:apache:struts:2.3.1:*:*:*:*:*:*:*",
-            "cpe:2.3:a:apache:struts:2.3.2:*:*:*:*:*:*:*"
-        ]
-    }
-
-Sample python script::
-
-    import requests
-
-    request_body = {
-        "cpes": [
-            "cpe:2.3:a:apache:struts:2.3.1:*:*:*:*:*:*:*"
-        ],
-    }
-
-    resp = requests.post('https://public.vulnerablecode.io/api/cpes/bulk_search', json= request_body, headers={'Authorization': "Token 123456789"}).json()
-
-The response will be a list of vulnerabilities that have the following CPEs.
-
-
 API endpoints reference
 --------------------------
 
