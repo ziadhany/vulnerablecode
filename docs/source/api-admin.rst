@@ -23,7 +23,7 @@ This can be done in the admin and from the command line::
 API client configuration
 ----------------------------
 
-API clients must send a User-Agent header that matches the value of the
+API clients must send a `User-Agent` header that matches the value of the
 `VCIO_USER_AGENT` setting.
 
 Add the following to your .env file::

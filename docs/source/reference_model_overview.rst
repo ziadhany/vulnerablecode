@@ -8,6 +8,4 @@ This is a set of Graphviz-based graph diagrams of the application and admin mode
 .. figure:: images/vcio-model.svg
     :alt: application and Admin model diagrams
     :width: 100%
-    :class: with-shadow
-
-.. rst-class::  clear-both
+    :class: with-shadow clear-both

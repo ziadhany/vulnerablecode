@@ -20,7 +20,7 @@ The search by packages is available at the following URL:
 How to search by packages:
 
     1. Go to the URL: `https://public.vulnerablecode.io/ <https://public.vulnerablecode.io/>`_
-    2. Enter the package URL or purl prefix fragment such as ``pkg:pypi/flask``
+    2. Enter the package URL or purl prefix fragment such as ``pkg:pypi/aubio``
        or by package name in the search box.
     3. Click on the search button.
 
@@ -42,5 +42,5 @@ You can directly navigate to an advisory page by specifying the importer name (f
 and the advisory identifier (for example, CVE-2026-23918). `https://public.vulnerablecode.io/advisories/advisory_name/AVID`
 
 For example:
-    - `https://public.vulnerablecode.io/advisories/github_osv/GHSA-xrcv-f9gm-v42c <https://public.vulnerablecode.io/advisories/github_osv/GHSA-xrcv-f9gm-v42c>`_
-    - `https://public.vulnerablecode.io/advisories/nvd/CVE-2026-23918 <https://public.vulnerablecode.io/advisories/nvd/CVE-2026-23918>`_
+    - `https://public.vulnerablecode.io/advisories/github_osv/GHSA-6xcx-gx7r-rccj <https://public.vulnerablecode.io/advisories/github_osv/GHSA-6xcx-gx7r-rccj>`_
+    - `https://public.vulnerablecode.io/advisories/nvd/CVE-2026-23918 <https://public.vulnerablecode.io/advisories/nvd/CVE-2023-40024>`_
