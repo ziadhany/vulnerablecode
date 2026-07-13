@@ -18,11 +18,12 @@ What can I do with VulnerableCode?
 
 **For security researchers and software developers, VulnerableCode offers a web
 UI and a JSON API to efficiently find if the FOSS packages and dependencies that
-you use are affected by known vulnerabilities advisories and to determine whether a later package version
-fixes those vulnerabilities advisories.**
+you use are affected by known vulnerabilities advisories and to determine whether
+a later package version fixes those vulnerabilities advisories.**
 
 
-- With the web UI, you can search by package using Package URLs and navigate directly to advisory/AVID page
+- With the web UI, you can search by package using
+  Package URLs and navigate directly to advisory/AVID page
 
 - With the JSON API, you can perform package queries using Package URLs (`purl
   <https://github.com/package-url/purl-spec>`__) or query
