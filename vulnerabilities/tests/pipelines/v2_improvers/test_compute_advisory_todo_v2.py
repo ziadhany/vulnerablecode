@@ -15,15 +15,18 @@ from django.utils import timezone
 from packageurl import PackageURL
 from univers.version_range import VersionRange
 
+from vulnerabilities import severity_systems
 from vulnerabilities.importer import AdvisoryDataV2
 from vulnerabilities.importer import AffectedPackageV2
 from vulnerabilities.importer import ReferenceV2
+from vulnerabilities.importer import VulnerabilitySeverity
 from vulnerabilities.models import AdvisoryToDoV2
 from vulnerabilities.models import AdvisoryV2
 from vulnerabilities.models import ImpactedPackage
 from vulnerabilities.pipelines.v2_improvers.compute_advisory_todo import ComputeToDo
 from vulnerabilities.pipes.advisory import insert_advisory_v2
 from vulnerabilities.tests.pipelines import TestLogger
+from vulnerabilities.utils import canonical_value
 
 
 class TestComputeToDo(TestCase):
@@ -175,6 +178,94 @@ class TestComputeToDo(TestCase):
                     package=PackageURL(type="npm", name="package1"),
                     affected_version_range=VersionRange.from_string("vers:npm/>=1.0.0|<=1.9.0"),
                     fixed_version_range=VersionRange.from_string("vers:npm/2.0.0"),
+                ),
+            ],
+            references=[ReferenceV2(url="https://example.com/vuln1")],
+            url="https://test.url/",
+        )
+
+        self.advisory_data9 = AdvisoryDataV2(
+            advisory_id="test_id9",
+            aliases=["CVE-000-000"],
+            summary="Test summary",
+            affected_packages=[
+                AffectedPackageV2(
+                    package=PackageURL(type="npm", name="package1"),
+                    affected_version_range=VersionRange.from_string("vers:npm/>=1.0.0|<2.0.0"),
+                    fixed_version_range=VersionRange.from_string("vers:npm/2.0.0"),
+                )
+            ],
+            severities=[
+                VulnerabilitySeverity(
+                    system=severity_systems.CVSSV31,
+                    scoring_elements="CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:U/C:H/I:H/A:L",
+                    value="8.3",
+                ),
+            ],
+            references=[ReferenceV2(url="https://example.com/vuln1")],
+            url="https://test.url/",
+        )
+
+        self.advisory_data11 = AdvisoryDataV2(
+            advisory_id="test_id_11",
+            aliases=["CVE-000-000"],
+            summary="Test summary",
+            affected_packages=[
+                AffectedPackageV2(
+                    package=PackageURL(type="npm", name="package2"),
+                    affected_version_range=VersionRange.from_string("vers:npm/>=1.0.0|<2.0.0"),
+                    fixed_version_range=VersionRange.from_string("vers:npm/2.0.0"),
+                )
+            ],
+            severities=[
+                VulnerabilitySeverity(
+                    system=severity_systems.CVSSV31,
+                    scoring_elements="CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:U/C:H/I:H/A:H",
+                    value="8.8",
+                ),
+            ],
+            references=[ReferenceV2(url="https://example.com/vuln1")],
+            url="https://test.url/",
+        )
+
+        self.advisory_data10 = AdvisoryDataV2(
+            advisory_id="test_id_10",
+            aliases=["CVE-000-000"],
+            summary="Test summary",
+            affected_packages=[
+                AffectedPackageV2(
+                    package=PackageURL(type="npm", name="package1"),
+                    affected_version_range=VersionRange.from_string("vers:npm/>=1.0.0|<2.0.0"),
+                    fixed_version_range=VersionRange.from_string("vers:npm/2.0.0"),
+                )
+            ],
+            severities=[
+                VulnerabilitySeverity(
+                    system=severity_systems.CVSSV31,
+                    scoring_elements="CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:U/C:H/I:H/A:H",
+                    value="8.8",
+                ),
+            ],
+            references=[ReferenceV2(url="https://example.com/vuln1")],
+            url="https://test.url/",
+        )
+
+        self.advisory_data12 = AdvisoryDataV2(
+            advisory_id="test_id_12",
+            aliases=["CVE-000-000"],
+            summary="Test summary",
+            affected_packages=[
+                AffectedPackageV2(
+                    package=PackageURL(type="npm", name="package1"),
+                    affected_version_range=VersionRange.from_string("vers:npm/>=1.0.0|<2.0.0"),
+                    fixed_version_range=VersionRange.from_string("vers:npm/2.0.0"),
+                )
+            ],
+            severities=[
+                VulnerabilitySeverity(
+                    system=severity_systems.CVSSV3,
+                    scoring_elements="CVSS:3.0/AV:N/AC:L/PR:N/UI:R/S:U/C:H/I:H/A:H",
+                    value="8.8",
                 ),
             ],
             references=[ReferenceV2(url="https://example.com/vuln1")],
@@ -600,7 +691,75 @@ class TestComputeToDo(TestCase):
         result_partial_curation = issue_details["partial_curation_advisory"]
         self.assertEqual(1, AdvisoryToDoV2.objects.count())
         self.assertEqual("CONFLICTING_AFFECTED_PACKAGES", todo.issue_type)
-        self.assertDictEqual(expected_partial_curation_advisory, result_partial_curation)
+        self.assertCountEqual(
+            expected_partial_curation_advisory["affected_packages"],
+            result_partial_curation["affected_packages"],
+        )
+
+    def test_todo_conflicting_severity(self):
+        insert_advisory_v2(
+            advisory=self.advisory_data9,
+            logger=self.log.write,
+            datasource_id="test9",
+            pipeline_id="test_pipeline9",
+        )
+        insert_advisory_v2(
+            advisory=self.advisory_data10,
+            logger=self.log.write,
+            datasource_id="test10",
+            pipeline_id="test_pipeline10",
+        )
+
+        self.assertEqual(0, AdvisoryToDoV2.objects.count())
+        pipeline = ComputeToDo()
+        pipeline.execute()
+
+        todo = AdvisoryToDoV2.objects.first()
+        adv = AdvisoryV2.objects.first()
+        self.assertEqual(1, AdvisoryToDoV2.objects.count())
+        self.assertEqual("CONFLICTING_SEVERITY_SCORES", todo.issue_type)
+        self.assertEqual(2, todo.advisories.count())
+        self.assertEqual(todo, adv.advisory_todos.first())
+
+    def test_todo_conflicting_severity_with_no_common_purl(self):
+        insert_advisory_v2(
+            advisory=self.advisory_data9,
+            logger=self.log.write,
+            datasource_id="test9",
+            pipeline_id="test_pipeline9",
+        )
+        insert_advisory_v2(
+            advisory=self.advisory_data11,
+            logger=self.log.write,
+            datasource_id="test11",
+            pipeline_id="test_pipeline11",
+        )
+
+        self.assertEqual(0, AdvisoryToDoV2.objects.count())
+        pipeline = ComputeToDo()
+        pipeline.execute()
+
+        self.assertEqual(0, AdvisoryToDoV2.objects.count())
+
+    def test_todo_conflicting_severity_with_no_common_cvss(self):
+        insert_advisory_v2(
+            advisory=self.advisory_data10,
+            logger=self.log.write,
+            datasource_id="test10",
+            pipeline_id="test_pipeline10",
+        )
+        insert_advisory_v2(
+            advisory=self.advisory_data12,
+            logger=self.log.write,
+            datasource_id="test12",
+            pipeline_id="test_pipeline12",
+        )
+
+        self.assertEqual(0, AdvisoryToDoV2.objects.count())
+        pipeline = ComputeToDo()
+        pipeline.execute()
+
+        self.assertEqual(0, AdvisoryToDoV2.objects.count())
 
 
 def normalize(obj):

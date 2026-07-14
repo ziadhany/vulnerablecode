@@ -7,38 +7,7 @@
 # See https://aboutcode.org for more information about nexB OSS projects.
 #
 
-from vulnerabilities.importers import apache_httpd
-from vulnerabilities.importers import apache_kafka
-from vulnerabilities.importers import apache_tomcat
-from vulnerabilities.importers import archlinux
-from vulnerabilities.importers import curl
-from vulnerabilities.importers import debian
-from vulnerabilities.importers import debian_oval
-from vulnerabilities.importers import elixir_security
-from vulnerabilities.importers import epss
-from vulnerabilities.importers import fireeye
-from vulnerabilities.importers import gentoo
-from vulnerabilities.importers import github_osv
-from vulnerabilities.importers import istio
-from vulnerabilities.importers import mozilla
-from vulnerabilities.importers import oss_fuzz
-from vulnerabilities.importers import postgresql
-from vulnerabilities.importers import project_kb_msr2019
-from vulnerabilities.importers import redhat
-from vulnerabilities.importers import retiredotnet
-from vulnerabilities.importers import ruby
-from vulnerabilities.importers import suse_scores
-from vulnerabilities.importers import ubuntu_usn
-from vulnerabilities.importers import vulnrichment
-from vulnerabilities.importers import xen
 from vulnerabilities.pipelines import VulnerableCodeBaseImporterPipelineV2
-from vulnerabilities.pipelines import alpine_linux_importer
-from vulnerabilities.pipelines import github_importer
-from vulnerabilities.pipelines import gitlab_importer
-from vulnerabilities.pipelines import nginx_importer
-from vulnerabilities.pipelines import npm_importer
-from vulnerabilities.pipelines import pypa_importer
-from vulnerabilities.pipelines import pysec_importer
 from vulnerabilities.pipelines.v2_importers import alpine_linux_importer as alpine_linux_importer_v2
 from vulnerabilities.pipelines.v2_importers import aosp_importer as aosp_importer_v2
 from vulnerabilities.pipelines.v2_importers import apache_httpd_importer as apache_httpd_v2
@@ -159,37 +128,6 @@ IMPORTERS_REGISTRY = create_registry(
         collect_fix_commits_v2.CollectGitFixCommitsPipeline,
         collect_fix_commits_v2.CollectJenkinsFixCommitsPipeline,
         collect_fix_commits_v2.CollectGitlabFixCommitsPipeline,
-        github_importer.GitHubAPIImporterPipeline,
-        gitlab_importer.GitLabImporterPipeline,
-        github_osv.GithubOSVImporter,
-        pypa_importer.PyPaImporterPipeline,
-        npm_importer.NpmImporterPipeline,
-        nginx_importer.NginxImporterPipeline,
-        pysec_importer.PyPIImporterPipeline,
-        apache_tomcat.ApacheTomcatImporter,
-        postgresql.PostgreSQLImporter,
-        debian.DebianImporter,
-        curl.CurlImporter,
-        epss.EPSSImporter,
-        vulnrichment.VulnrichImporter,
-        alpine_linux_importer.AlpineLinuxImporterPipeline,
-        apache_kafka.ApacheKafkaImporter,
-        ruby.RubyImporter,
-        redhat.RedhatImporter,
-        archlinux.ArchlinuxImporter,
-        debian_oval.DebianOvalImporter,
-        retiredotnet.RetireDotnetImporter,
-        apache_httpd.ApacheHTTPDImporter,
-        mozilla.MozillaImporter,
-        gentoo.GentooImporter,
-        istio.IstioImporter,
-        project_kb_msr2019.ProjectKBMSRImporter,
-        suse_scores.SUSESeverityScoreImporter,
-        elixir_security.ElixirSecurityImporter,
-        xen.XenImporter,
-        ubuntu_usn.UbuntuUSNImporter,
-        fireeye.FireyeImporter,
-        oss_fuzz.OSSFuzzImporter,
     ]
 )
 

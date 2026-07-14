@@ -1,6 +1,21 @@
 Release notes
 =============
 
+Version v40.0.1
+---------------------
+
+- Add throttling info in API docs, remove V1 and V2 API docs.
+- Avoid converting None to "None" in AdvisorySeverity.
+- Refine package curation workflow.
+
+
+Version v40.0.0
+---------------------
+
+- Fix malformed CVSS severity scores.
+- Disable v1 API, UI & pipelines.
+
+
 Version v39.0.0
 ---------------------
 

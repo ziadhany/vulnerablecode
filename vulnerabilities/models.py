@@ -9,8 +9,6 @@
 
 import csv
 import datetime
-import hashlib
-import json
 import logging
 import uuid
 import xml.etree.ElementTree as ET

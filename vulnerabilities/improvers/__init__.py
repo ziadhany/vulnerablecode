@@ -7,15 +7,6 @@
 # See https://aboutcode.org for more information about nexB OSS projects.
 #
 
-from vulnerabilities.improvers import valid_versions
-from vulnerabilities.improvers import vulnerability_status
-from vulnerabilities.pipelines import compute_package_risk
-from vulnerabilities.pipelines import compute_package_version_rank
-from vulnerabilities.pipelines import enhance_with_exploitdb
-from vulnerabilities.pipelines import enhance_with_kev
-from vulnerabilities.pipelines import enhance_with_metasploit
-from vulnerabilities.pipelines import flag_ghost_packages
-from vulnerabilities.pipelines import populate_vulnerability_summary_pipeline
 from vulnerabilities.pipelines.v2_improvers import archive_urls
 from vulnerabilities.pipelines.v2_improvers import collect_ssvc_trees
 from vulnerabilities.pipelines.v2_improvers import compute_advisory_todo as compute_advisory_todo_v2
@@ -51,29 +42,6 @@ IMPROVERS_REGISTRY = create_registry(
         reference_collect_commits.CollectReferencesFixCommitsPipeline,
         enhance_with_github_poc.GithubPocsImproverPipeline,
         mark_unfurl_version_range.MarkUnfurlVersionRangePipeline,
-        valid_versions.GitHubBasicImprover,
-        valid_versions.GitLabBasicImprover,
-        valid_versions.NginxBasicImprover,
-        valid_versions.ApacheHTTPDImprover,
-        valid_versions.DebianBasicImprover,
-        valid_versions.NpmImprover,
-        valid_versions.ElixirImprover,
-        valid_versions.ApacheTomcatImprover,
-        valid_versions.ApacheKafkaImprover,
-        valid_versions.IstioImprover,
-        valid_versions.DebianOvalImprover,
-        valid_versions.OSSFuzzImprover,
-        valid_versions.RubyImprover,
-        valid_versions.GithubOSVImprover,
-        vulnerability_status.VulnerabilityStatusImprover,
-        valid_versions.CurlImprover,
-        flag_ghost_packages.FlagGhostPackagePipeline,
-        enhance_with_kev.VulnerabilityKevPipeline,
-        enhance_with_metasploit.MetasploitImproverPipeline,
-        enhance_with_exploitdb.ExploitDBImproverPipeline,
-        compute_package_risk.ComputePackageRiskPipeline,
-        compute_package_version_rank.ComputeVersionRankPipeline,
-        populate_vulnerability_summary_pipeline.PopulateVulnerabilitySummariesPipeline,
         group_advisories_for_packages_v2.GroupAdvisoriesForPackages,
     ]
 )

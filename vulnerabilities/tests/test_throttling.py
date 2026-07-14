@@ -23,7 +23,7 @@ from vulnerabilities.models import ApiUser
 def simulate_throttle_usage(url, client, mock_use_count):
     throttle = PermissionBasedUserRateThrottle()
 
-    request = client.get(url, HTTP_USER_AGENT="VCIO_API_AGENT").wsgi_request
+    request = client.post(url, HTTP_USER_AGENT="VCIO_API_AGENT", data={"purls": []}).wsgi_request
 
     if cache_key := throttle.get_cache_key(request, view=None):
         now = throttle.timer()
@@ -93,122 +93,127 @@ class PermissionBasedRateThrottleApiTests(APITestCase):
 
     def test_user_with_low_perm_throttling(self):
         simulate_throttle_usage(
-            url="/api/packages",
+            url="/api/v3/packages",
             client=self.th_low_user_csrf_client,
             mock_use_count=19,
         )
 
-        response = self.th_low_user_csrf_client.get(
-            "/api/packages", HTTP_USER_AGENT="VCIO_API_AGENT"
+        response = self.th_low_user_csrf_client.post(
+            "/api/v3/packages", HTTP_USER_AGENT="VCIO_API_AGENT", data={"purls": []}, format="json"
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         # exhausted 20/minute allowed requests.
-        response = self.th_low_user_csrf_client.get(
-            "/api/packages", HTTP_USER_AGENT="VCIO_API_AGENT"
+        response = self.th_low_user_csrf_client.post(
+            "/api/v3/packages", HTTP_USER_AGENT="VCIO_API_AGENT", data={"purls": []}, format="json"
         )
         self.assertEqual(response.status_code, status.HTTP_429_TOO_MANY_REQUESTS)
 
     def test_basic_user_throttling(self):
         simulate_throttle_usage(
-            url="/api/packages",
+            url="/api/v3/packages",
             client=self.basic_user_csrf_client,
             mock_use_count=29,
         )
 
-        response = self.basic_user_csrf_client.get(
-            "/api/packages", HTTP_USER_AGENT="VCIO_API_AGENT"
+        response = self.basic_user_csrf_client.post(
+            "/api/v3/packages", HTTP_USER_AGENT="VCIO_API_AGENT", data={"purls": []}, format="json"
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         # exhausted 30/minute allowed requests.
-        response = self.basic_user_csrf_client.get(
-            "/api/packages", HTTP_USER_AGENT="VCIO_API_AGENT"
+        response = self.basic_user_csrf_client.post(
+            "/api/v3/packages", HTTP_USER_AGENT="VCIO_API_AGENT", data={"purls": []}, format="json"
         )
         self.assertEqual(response.status_code, status.HTTP_429_TOO_MANY_REQUESTS)
 
     def test_user_with_medium_perm_throttling(self):
         simulate_throttle_usage(
-            url="/api/packages",
+            url="/api/v3/packages",
             client=self.th_medium_user_csrf_client,
             mock_use_count=29,
         )
 
-        response = self.th_medium_user_csrf_client.get(
-            "/api/packages", HTTP_USER_AGENT="VCIO_API_AGENT"
+        response = self.th_medium_user_csrf_client.post(
+            "/api/v3/packages", HTTP_USER_AGENT="VCIO_API_AGENT", data={"purls": []}, format="json"
         )
+        print(response.json())
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         # exhausted 30/minute allowed requests for user with 14400 perm.
-        response = self.th_medium_user_csrf_client.get(
-            "/api/packages", HTTP_USER_AGENT="VCIO_API_AGENT"
+        response = self.th_medium_user_csrf_client.post(
+            "/api/v3/packages", HTTP_USER_AGENT="VCIO_API_AGENT", data={"purls": []}, format="json"
         )
         self.assertEqual(response.status_code, status.HTTP_429_TOO_MANY_REQUESTS)
 
     def test_user_with_high_perm_throttling(self):
         simulate_throttle_usage(
-            url="/api/packages",
+            url="/api/v3/packages",
             client=self.th_high_user_csrf_client,
             mock_use_count=0,
         )
 
-        response = self.th_high_user_csrf_client.get(
-            "/api/packages", HTTP_USER_AGENT="VCIO_API_AGENT"
+        response = self.th_high_user_csrf_client.post(
+            "/api/v3/packages", HTTP_USER_AGENT="VCIO_API_AGENT", data={"purls": []}, format="json"
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         # exhausted 18000/hr allowed requests for user with 18000 perm.
-        response = self.th_high_user_csrf_client.get(
-            "/api/packages", HTTP_USER_AGENT="VCIO_API_AGENT"
+        response = self.th_high_user_csrf_client.post(
+            "/api/v3/packages", HTTP_USER_AGENT="VCIO_API_AGENT", data={"purls": []}, format="json"
         )
         self.assertEqual(response.status_code, status.HTTP_429_TOO_MANY_REQUESTS)
 
     def test_user_with_unrestricted_perm_throttling(self):
         simulate_throttle_usage(
-            url="/api/packages",
+            url="/api/v3/packages",
             client=self.th_unrestricted_user_csrf_client,
             mock_use_count=20000,
         )
 
         # no throttling for user with unrestricted perm.
-        response = self.th_unrestricted_user_csrf_client.get(
-            "/api/packages", HTTP_USER_AGENT="VCIO_API_AGENT"
+        response = self.th_unrestricted_user_csrf_client.post(
+            "/api/v3/packages", HTTP_USER_AGENT="VCIO_API_AGENT", data={"purls": []}, format="json"
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def test_user_in_group_with_unrestricted_perm_throttling(self):
         simulate_throttle_usage(
-            url="/api/packages",
+            url="/api/v3/packages",
             client=self.th_group_user_csrf_client,
             mock_use_count=20000,
         )
 
         # no throttling for user in group with unrestricted perm.
-        response = self.th_group_user_csrf_client.get(
-            "/api/packages", HTTP_USER_AGENT="VCIO_API_AGENT"
+        response = self.th_group_user_csrf_client.post(
+            "/api/v3/packages", HTTP_USER_AGENT="VCIO_API_AGENT", data={"purls": []}, format="json"
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def test_anon_throttling(self):
         simulate_throttle_usage(
-            url="/api/packages",
+            url="/api/v3/packages",
             client=self.csrf_client_anon,
             mock_use_count=9,
         )
 
-        response = self.csrf_client_anon.get("/api/packages", HTTP_USER_AGENT="VCIO_API_AGENT")
+        response = self.csrf_client_anon.post(
+            "/api/v3/packages", HTTP_USER_AGENT="VCIO_API_AGENT", format="json", data={"purls": []}
+        )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         # exhausted 3600/hr allowed requests for anon.
-        response = self.csrf_client_anon.get("/api/packages", HTTP_USER_AGENT="VCIO_API_AGENT")
+        response = self.csrf_client_anon.post(
+            "/api/v3/packages", HTTP_USER_AGENT="VCIO_API_AGENT", format="json", data={"purls": []}
+        )
         self.assertEqual(response.status_code, status.HTTP_429_TOO_MANY_REQUESTS)
         self.assertEqual(
             response.data.get("message"),
             "Your request has been throttled. Please contact support@nexb.com",
         )
 
-        response = self.csrf_client_anon.get(
-            "/api/vulnerabilities", HTTP_USER_AGENT="VCIO_API_AGENT"
+        response = self.csrf_client_anon.post(
+            "/api/v3/packages", HTTP_USER_AGENT="VCIO_API_AGENT", format="json", data={"purls": []}
         )
         # 429 - too many requests for anon user
         self.assertEqual(response.status_code, status.HTTP_429_TOO_MANY_REQUESTS)
@@ -220,7 +225,7 @@ class PermissionBasedRateThrottleApiTests(APITestCase):
         data = json.dumps({"purls": ["pkg:foo/bar"]})
 
         response = self.csrf_client_anon.post(
-            "/api/packages/bulk_search",
+            "/api/v3/packages",
             data=data,
             content_type="application/json",
             HTTP_USER_AGENT="VCIO_API_AGENT",
