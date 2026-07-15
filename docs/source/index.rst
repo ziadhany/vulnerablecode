@@ -47,7 +47,7 @@ VulnerableCode Documentation
 *VulnerableCode* provides a Web UI and API to access a database of known software package
 vulnerabilities with comprehensive information from upstream and downstream public
 sources including packages affected by a vulnerability advisories and packages that fix a
-vulnerability.
+vulnerability advisory.
 
 There is a `public vulnerableCode database <https://public.vulnerablecode.io/>`_
 and the project also provides the tools to build your own instance of the database.
@@ -98,7 +98,7 @@ Reference documentation for VulnerableCode features and customizations.
 - :ref:`reference_model_overview`
 - :ref:`command_line_interface`
 - :ref:`importers_link`
-- :ref:`pipelines_avid`
+- :ref:`pipeline_avid_mapping`
 
 .. rst-class:: column column2 bottom-right
 

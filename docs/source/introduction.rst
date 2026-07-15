@@ -39,9 +39,9 @@ Why VulnerableCode?
 -------------------
 
 VulnerableCode provides open correlated data and will support curated
-data. Our approach is to prioritize upstream data sources and to merge multiple
-vulnerability data sources after comparison and correlation. The vulnerability
-data is keyed by Package URL ensuring quick and accurate lookup with minimal
+data. Our approach is to prioritize upstream data sources and to group multiple
+vulnerability advisory data sources after comparison and correlation. The vulnerability
+advisory data is keyed by Package URL ensuring quick and accurate lookup with minimal
 friction. We continuously validate and refine the collected data for
 quality, accuracy and consistency using "improver" jobs.
 An example is an improver that can validate that a package version reported as
