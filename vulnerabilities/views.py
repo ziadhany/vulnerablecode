@@ -1198,3 +1198,24 @@ class AdvisorySeverityCurationView(DetailView):
         context["vulnerability_id"] = todo.alias
         context["curation_items"] = json.dumps(todo.issue_detail["curation_items"])
         return context
+
+
+class AdvisoryWeaknessCurationView(DetailView):
+    model = AdvisoryToDoV2
+    template_name = "weakness_curation.html"
+    slug_url_kwarg = "todo_id"
+    slug_field = "todo_id"
+
+    def get_queryset(self):
+        return super().get_queryset().filter(issue_type="CONFLICTING_WEAKNESSES")
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        todo = self.object
+
+        context["advisory_summaries"] = {
+            adv.avid: adv.summary for adv in todo.advisories.all() if adv.summary.strip()
+        }
+        context["vulnerability_id"] = todo.alias
+        context["curation_items"] = json.dumps(todo.issue_detail["curation_items"])
+        return context
