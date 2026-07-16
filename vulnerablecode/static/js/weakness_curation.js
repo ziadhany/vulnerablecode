@@ -175,8 +175,6 @@ const app = {
     createRow(v, item) {
         const tr = document.createElement('tr');
         const cwe_info = item.cwe_details[v]
-        const isLastItem = item.all_cwes[item.all_cwes.length - 1] === v;
-        const tooltipPosition = isLastItem ? "has-tooltip-top" : "has-tooltip-right";
         const state = this.userStates[this.currentIndex][v];
         tr.innerHTML = `
             <td
@@ -186,7 +184,7 @@ const app = {
                 CWE-${v}<br>
                 <span class="has-text-weight-normal">${cwe_info.name}</span>
                 <span
-                    class="icon has-tooltip-multiline ${tooltipPosition} has-tooltip-arrow has-text-weight-normal"
+                    class="icon has-tooltip-multiline has-tooltip-top has-tooltip-arrow has-text-weight-normal"
                     data-tooltip="${cwe_info.description}"
                 >
                     <i class="fa fa-info-circle"></i>
@@ -295,7 +293,7 @@ const app = {
     cycleState(v) {
         const seq = ['applicable', 'not-applicable'];
         const current = this.userStates[this.currentIndex][v];
-        this.userStates[this.currentIndex][v] = seq[(seq.indexOf(current) + 1) % 2];
+        this.userStates[this.currentIndex][v] = seq[(seq.indexOf(current) + 1) % seq.length];
         const item = curationItems[this.currentIndex];
         const weaknesses = item.all_cwes;
         this.renderBody(item, weaknesses);
