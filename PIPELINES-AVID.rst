@@ -11,7 +11,7 @@ Pipelines AVID Mapping
   within its datasource.
 
 - An ``AVID`` is the unique identifier for the datasource used for this
-  advisory (for example, ``nvd`` or ``github_osv``).
+  advisory (datasource_id example: ``nvd`` or ``github_osv``).
 
   A pipeline AVID is constructed by combining the pipeline identifier with the
   upstream Advisory ID ``datasource_id/advisory_id``. For example:

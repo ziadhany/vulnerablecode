@@ -38,8 +38,8 @@ Click on the package URL to view the package details.
 Navigate to Advisories
 -----------------------
 
-You can directly navigate to an advisory page by specifying the importer name (for example, nvd)
-and the advisory identifier (for example, CVE-2026-23918). `https://public.vulnerablecode.io/advisories/advisory_name/AVID`
+You can directly navigate to an advisory page by specifying the datasource_id (for example, nvd)
+and advisory_id (for example, CVE-2026-23918). `https://public.vulnerablecode.io/advisories/datasource_id/advisory_id`
 
 For example:
     - `https://public.vulnerablecode.io/advisories/github_osv/GHSA-6xcx-gx7r-rccj <https://public.vulnerablecode.io/advisories/github_osv/GHSA-6xcx-gx7r-rccj>`_
