@@ -511,6 +511,9 @@ class ComputeToDo(VulnerableCodePipeline):
             for advisory in advisories_with_common_alias:
                 cwes = set()
                 for w in advisory.weaknesses.all():
+                    if not w.weakness.weakness_abstraction:
+                        continue
+
                     cwe_details[w.cwe_id] = w.to_dict()
                     cwes.add(w.cwe_id)
 
