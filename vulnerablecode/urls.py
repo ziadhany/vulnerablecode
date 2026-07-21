@@ -39,6 +39,7 @@ from vulnerabilities.views import PackageV2Details
 from vulnerabilities.views import PipelineRunDetailView
 from vulnerabilities.views import PipelineRunListView
 from vulnerabilities.views import PipelineScheduleListView
+from vulnerablecode.settings import ALTCHA_SESSION_TIMEOUT
 from vulnerablecode.settings import DEBUG
 from vulnerablecode.settings import DEBUG_TOOLBAR
 
@@ -122,7 +123,6 @@ urlpatterns = [
         AdvisoryDetails.as_view(),
         name="advisory_details",
     ),
-    path("altcha/", AltchaView.as_view(), name="altcha"),
     path(
         "packages/v2/search/",
         PackageSearchV2.as_view(),
@@ -168,6 +168,9 @@ urlpatterns = [
     #     admin.site.urls,
     # ),
 ]
+
+if ALTCHA_SESSION_TIMEOUT:
+    urlpatterns += [path("altcha/", AltchaView.as_view(), name="altcha")]
 
 if DEBUG:
     urlpatterns += [path("django-rq/", include("django_rq.urls"))]

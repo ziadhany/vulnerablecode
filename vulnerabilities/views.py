@@ -46,7 +46,6 @@ from vulnerabilities.forms import ApiUserCreationForm
 from vulnerabilities.forms import PackageSearchForm
 from vulnerabilities.forms import PipelineSchedulePackageForm
 from vulnerabilities.forms import VulnerabilitySearchForm
-from vulnerabilities.middleware.altcha_protection import SESSION_TIMEOUT as ALTCHA_SESSION_TIMEOUT
 from vulnerabilities.models import ISSUE_TYPE_CHOICES
 from vulnerabilities.models import AdvisorySetMember
 from vulnerabilities.models import AdvisoryToDoV2
@@ -66,6 +65,7 @@ from vulnerabilities.utils import TYPES_WITH_MULTIPLE_IMPORTERS
 from vulnerabilities.utils import get_advisories_from_groups
 from vulnerabilities.utils import safe_altcha_redirect
 from vulnerablecode import __version__ as VULNERABLECODE_VERSION
+from vulnerablecode.settings import ALTCHA_SESSION_TIMEOUT
 from vulnerablecode.settings import env
 
 PAGE_SIZE = 10
