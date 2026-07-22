@@ -3470,6 +3470,67 @@ class ImpactedPackage(models.Model):
         ]
 
 
+class AdvisoryMitigations(models.Model):
+
+    advisory = models.ForeignKey(
+        AdvisoryV2,
+        related_name="mitigations",
+        on_delete=models.CASCADE,
+    )
+
+    base_purl = models.CharField(
+        max_length=500,
+        blank=False,
+        help_text="Version less PURL related to mitigation.",
+    )
+
+    upgrade_to_versions = models.ManyToManyField(
+        "PackageV2",
+        blank=True,
+        related_name="upgrade_mitigations",
+        help_text="Packages that mitigates the advisory by upgrading.",
+    )
+    upgrade_to_versions_note = models.TextField(blank=True)
+
+    downgrade_to_versions = models.ManyToManyField(
+        "PackageV2",
+        blank=True,
+        related_name="downgrade_mitigations",
+        help_text="Packages that mitigates the advisory by downgrading.",
+    )
+    downgrade_to_versions_note = models.TextField(blank=True)
+
+    patches = models.ManyToManyField(
+        "PackageCommitPatch",
+        related_name="patch_mitigations",
+        help_text="Patches to mitigate the advisory.",
+    )
+    patches_note = models.TextField(blank=True)
+
+    config_change = models.TextField(
+        blank=True,
+        help_text="Configuration change to mitigate the advisory.",
+    )
+    config_change_note = models.TextField(blank=True)
+
+    filter_ports_ips = models.TextField(
+        blank=True,
+        help_text="Filter Ports and IPs to mitigate the advisory.",
+    )
+    filter_ports_ips_note = models.TextField(blank=True)
+
+    replace_with_packages = models.ManyToManyField(
+        "PackageV2",
+        blank=True,
+        related_name="replacement_mitigations",
+        help_text="Packages that can replace the vulnerable package.",
+    )
+    replace_package_note = models.TextField(blank=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+
 class ToDoRelatedAdvisory(models.Model):
     todo = models.ForeignKey(
         AdvisoryToDo,
